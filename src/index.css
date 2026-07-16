@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-wood-50: #fdfbf7;
+  --color-wood-100: #faf1e6;
+  --color-wood-200: #f3dfc6;
+  --color-wood-300: #e8c49e;
+  --color-wood-400: #dba374;
+  --color-wood-500: #8c5a3c;
+  --color-wood-600: #7b4c31;
+  --color-wood-700: #663d26;
+  --color-wood-800: #52301e;
+  --color-wood-900: #422617;
+  --color-wood-950: #29150c;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-wood-50);
+  color: var(--color-wood-950);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-wood-50);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-wood-200);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-wood-300);
+}
+
+/* Wood grain/stripes pattern styling with active shifts and scaling animations */
+.wood-pattern-btn {
+  background-color: var(--color-wood-600);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.04) 0px,
+    rgba(255, 255, 255, 0.04) 4px,
+    transparent 4px,
+    transparent 12px,
+    rgba(41, 21, 12, 0.08) 12px,
+    rgba(41, 21, 12, 0.08) 16px,
+    transparent 16px,
+    transparent 24px
+  );
+  background-size: 200% 200%;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.wood-pattern-btn:hover {
+  background-position: 100% 50%;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px -6px rgba(123, 76, 49, 0.5);
+}
+
+.wood-pattern-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.wood-pattern-btn-light {
+  background-color: var(--color-wood-100);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(140, 90, 60, 0.04) 0px,
+    rgba(140, 90, 60, 0.04) 4px,
+    transparent 4px,
+    transparent 16px
+  );
+  background-size: 200% 200%;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.wood-pattern-btn-light:hover {
+  background-position: 50% 100%;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px -4px rgba(140, 90, 60, 0.15);
+}
+
+.wood-pattern-btn-light:active {
+  transform: translateY(0) scale(0.98);
+}
+

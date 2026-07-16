@@ -1,0 +1,6 @@
+{
+  "name": "Dormiversity",
+  "description": "The trusted student hostel marketplace for Nigerian tertiary institutions, featuring escrow rent protection, verified inspections, roommates matching, and contact-safe in-app chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
