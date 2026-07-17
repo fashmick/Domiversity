@@ -20,6 +20,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dormiversity_secure_jwt_secret_key
 // Middlewares
 app.use(express.json());
 
+// Custom CORS middleware to support external frontends like Vercel
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // In-Memory state fallback if file system is blocked
 let platformState: any = null;
 

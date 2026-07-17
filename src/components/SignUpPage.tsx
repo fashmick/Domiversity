@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GraduationCap, ArrowLeft, ShieldCheck, User as UserIcon, Mail, Phone, Lock, School, Eye, EyeOff, Shield, CheckCircle2 } from 'lucide-react';
 import { School as SchoolType, User, UserRole } from '../types';
 import SchoolSelect from './SchoolSelect';
+import { getApiUrl } from '../utils';
 
 interface SignUpPageProps {
   schools: SchoolType[];
@@ -143,7 +144,7 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
     };
 
     setIsSendingOtp(true);
-    fetch('/api/auth/send-otp', {
+    fetch(getApiUrl('/api/auth/send-otp'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -183,7 +184,7 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
     }
 
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch(getApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -554,7 +555,7 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
                 type="button"
                 onClick={async () => {
                   try {
-                    const res = await fetch(`/api/auth/google/url?role=${role}&schoolId=${selectedSchool}`);
+                    const res = await fetch(getApiUrl(`/api/auth/google/url?role=${role}&schoolId=${selectedSchool}`));
                     const data = await res.json();
                     if (data.url) {
                       const width = 600;

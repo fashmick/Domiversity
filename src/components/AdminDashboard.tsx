@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2, Key, CreditCard, Mail, Sliders } from 'lucide-react';
 import { User, Booking, InspectorJob, School } from '../types';
-import { formatNaira, formatDate } from '../utils';
+import { formatNaira, formatDate, getApiUrl } from '../utils';
 
 interface AdminDashboardProps {
   schools: School[];
@@ -46,7 +46,7 @@ export default function AdminDashboard({
   useEffect(() => {
     if (subTab === 'integrations' && adminToken) {
       setIsLoadingKeys(true);
-      fetch('/api/admin/data', {
+      fetch(getApiUrl('/api/admin/data'), {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -72,7 +72,7 @@ export default function AdminDashboard({
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      const res = await fetch('/api/admin/settings', {
+      const res = await fetch(getApiUrl('/api/admin/settings'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

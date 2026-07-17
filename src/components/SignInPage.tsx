@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, ArrowLeft, Mail, Lock, ShieldCheck, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { User, UserRole } from '../types';
+import { getApiUrl } from '../utils';
 
 interface SignInPageProps {
   users: User[];
@@ -173,7 +174,7 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
               type="button"
               onClick={async () => {
                 try {
-                  const res = await fetch(`/api/auth/google/url?role=${role}`);
+                  const res = await fetch(getApiUrl(`/api/auth/google/url?role=${role}`));
                   const data = await res.json();
                   if (data.url) {
                     const width = 600;

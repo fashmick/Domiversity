@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Shield, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { getApiUrl } from '../utils';
 
 interface AdminLoginProps {
   onSuccess: (token: string) => void;
@@ -16,7 +17,7 @@ export default function AdminLogin({ onSuccess }: AdminLoginProps) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(getApiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })

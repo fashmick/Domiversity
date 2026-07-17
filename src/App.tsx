@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield } from 'lucide-react';
 import { loadState, saveState as saveLocalStorageState, PlatformState, checkMessageContactSharing } from './state';
 import { User, School, Hostel, Booking, InspectorJob, CohabitantPost, ChatThread, Message } from './types';
+import { getApiUrl } from './utils';
 import LandingPage from './components/LandingPage';
 import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
@@ -46,7 +47,7 @@ export default function App() {
   useEffect(() => {
     const fetchState = async () => {
       try {
-        const res = await fetch('/api/state');
+        const res = await fetch(getApiUrl('/api/state'));
         if (res.ok) {
           const data = await res.json();
           setState(data);
@@ -78,7 +79,7 @@ export default function App() {
           return;
         }
         try {
-          const res = await fetch('/api/admin/verify', {
+          const res = await fetch(getApiUrl('/api/admin/verify'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: adminToken })
@@ -114,7 +115,7 @@ export default function App() {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         const { userId } = event.data.payload;
         try {
-          const res = await fetch('/api/state');
+          const res = await fetch(getApiUrl('/api/state'));
           if (res.ok) {
             const data = await res.json();
             const matchedUser = data.users.find((u: any) => u.id === userId);
@@ -127,7 +128,7 @@ export default function App() {
               
               // Sync state to server & local storage
               saveLocalStorageState(updated);
-              await fetch('/api/state', {
+              await fetch(getApiUrl('/api/state'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updated)
@@ -167,7 +168,7 @@ export default function App() {
     setState(newState);
     saveLocalStorageState(newState); // local fallback
     try {
-      await fetch('/api/state', {
+      await fetch(getApiUrl('/api/state'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
