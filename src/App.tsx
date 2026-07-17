@@ -6,6 +6,7 @@ import { getApiUrl } from './utils';
 import LandingPage from './components/LandingPage';
 import SignInPage from './components/SignInPage';
 import SignUpPage from './components/SignUpPage';
+import TermsPage from './components/TermsPage';
 import Navigation from './components/Navigation';
 import StudentDashboard from './components/StudentDashboard';
 import LandlordDashboard from './components/LandlordDashboard';
@@ -189,6 +190,16 @@ export default function App() {
       setIsAdminVerified(false);
       window.history.pushState({}, '', '/');
     }
+    
+    // Clear active user session on sign out
+    if (state) {
+      const updated = {
+        ...state,
+        activeUserId: ''
+      };
+      saveStateAndSync(updated);
+    }
+    
     setIsLoggedIn(false);
     setActiveTab('dashboard');
   };
@@ -940,7 +951,15 @@ export default function App() {
 
   return (
     <div className="bg-wood-50 min-h-screen font-sans">
-      {!isLoggedIn ? (
+      {currentPath === '/terms' ? (
+        <TermsPage onBack={() => {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.history.pushState({}, '', '/');
+          }
+        }} />
+      ) : !isLoggedIn ? (
         currentPath === '/signup' ? (
           <SignUpPage
             schools={state.schools}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { GraduationCap, ArrowLeft, ShieldCheck, User as UserIcon, Mail, Phone, Lock, School, Eye, EyeOff, Shield, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { GraduationCap, ArrowLeft, ShieldCheck, User as UserIcon, Mail, Phone, Lock, School, Eye, EyeOff, Shield, CheckCircle2, ChevronDown, Scale, Home, ChevronsUpDown, Check } from 'lucide-react';
 import { School as SchoolType, User, UserRole } from '../types';
 import SchoolSelect from './SchoolSelect';
+import TermsPage from './TermsPage';
 import { getApiUrl } from '../utils';
 
 interface SignUpPageProps {
@@ -29,10 +30,26 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
   const [department, setDepartment] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Custom Account Type select states
+  const [isOpenRole, setIsOpenRole] = useState(false);
+  const containerRoleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRoleRef.current && !containerRoleRef.current.contains(event.target as Node)) {
+        setIsOpenRole(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Verification Screen States
   const [isVerifying, setIsVerifying] = useState(false);
@@ -80,6 +97,11 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
 
     if (!name.trim() || !email.trim() || !phone.trim() || !password) {
       setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setErrorMsg('You must read and accept the Terms & Conditions to register your profile.');
       return;
     }
 
@@ -336,30 +358,71 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
                 </div>
               )}
 
-              {/* Persona Select */}
-              <div>
+              {/* Persona Select Dropdown */}
+              <div ref={containerRoleRef} className="relative z-20">
                 <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">
                   Select Your Account Type
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => {
-                        setRole(r);
-                        setErrorMsg('');
-                      }}
-                      className={`py-3 px-2 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
-                        role === r
-                          ? 'bg-wood-900 border-wood-950 text-white shadow-md'
-                          : 'bg-wood-50 hover:bg-wood-100 border-wood-200 text-wood-700'
-                      }`}
-                    >
-                      {r.charAt(0) + r.slice(1).toLowerCase()}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpenRole(!isOpenRole)}
+                  className="w-full flex items-center justify-between text-left text-sm text-wood-950 bg-wood-50/40 hover:bg-wood-50/75 hover:border-wood-400 border-2 border-wood-200/80 rounded-xl px-4 py-3.5 shadow-2xs transition-all cursor-pointer focus:outline-hidden focus:ring-4 focus:ring-wood-500/10"
+                >
+                  <div className="flex items-center space-x-2.5 truncate">
+                    {role === 'STUDENT' && <GraduationCap size={16} className="text-wood-600 shrink-0" />}
+                    {role === 'LANDLORD' && <Home size={16} className="text-wood-600 shrink-0" />}
+                    {role === 'INSPECTOR' && <ShieldCheck size={16} className="text-wood-600 shrink-0" />}
+                    <span className="font-bold text-wood-900">
+                      {role === 'STUDENT' && 'Student Tenant'}
+                      {role === 'LANDLORD' && 'Landlord / Hostel Manager'}
+                      {role === 'INSPECTOR' && 'Certified Physical Inspector'}
+                    </span>
+                  </div>
+                  <ChevronsUpDown size={16} className="text-wood-400 shrink-0 ml-2" />
+                </button>
+
+                {isOpenRole && (
+                  <div className="absolute z-50 mt-1.5 w-full bg-white border border-wood-200 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
+                    <div className="py-1 divide-y divide-wood-50">
+                      {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => {
+                        const isSelected = role === r;
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => {
+                              setRole(r);
+                              setErrorMsg('');
+                              setIsOpenRole(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 hover:bg-wood-50/80 transition-colors flex items-center justify-between gap-2.5 text-xs cursor-pointer ${
+                              isSelected ? 'bg-wood-50/50 text-wood-950 font-semibold' : 'text-wood-700 font-medium'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5 truncate">
+                              {r === 'STUDENT' && <GraduationCap size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                              {r === 'LANDLORD' && <Home size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                              {r === 'INSPECTOR' && <ShieldCheck size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                              <div className="text-left">
+                                <p className="font-bold text-wood-950 text-xs sm:text-sm">
+                                  {r === 'STUDENT' && 'Student Tenant'}
+                                  {r === 'LANDLORD' && 'Landlord / Hostel Manager'}
+                                  {r === 'INSPECTOR' && 'Certified Physical Inspector'}
+                                </p>
+                                <p className="text-[10px] text-wood-400 font-normal">
+                                  {r === 'STUDENT' && 'Discover vetted rooms & protect payment in escrow'}
+                                  {r === 'LANDLORD' && 'Publish secure student housing & collect rent'}
+                                  {r === 'INSPECTOR' && 'Claim off-campus structural vetting jobs'}
+                                </p>
+                              </div>
+                            </div>
+                            {isSelected && <Check size={16} className="text-wood-600 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Full Name */}
@@ -527,6 +590,28 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
                 </div>
               )}
 
+              {/* Terms and Conditions Checkbox */}
+              <div className="flex items-start space-x-2.5 mt-4 p-3 bg-wood-50/40 border border-wood-200/50 rounded-xl">
+                <input
+                  id="agreeToTerms"
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 text-wood-600 focus:ring-wood-500 border-wood-300 rounded cursor-pointer"
+                />
+                <label htmlFor="agreeToTerms" className="text-xs text-wood-700 leading-relaxed select-none cursor-pointer">
+                  I have read and agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="font-bold text-wood-900 hover:text-wood-950 underline inline"
+                  >
+                    Terms &amp; Conditions
+                  </button>{' '}
+                  for escrow protection, physical inspections, and housing security.
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSendingOtp}
@@ -538,7 +623,7 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
                     <span>Sending activation code...</span>
                   </>
                 ) : (
-                  <span>Register Vetted Profile</span>
+                  <span>Sign Up</span>
                 )}
               </button>
 
@@ -590,6 +675,34 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
 
         </div>
       </div>
+
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-wood-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl animate-scaleUp">
+            <TermsPage onBack={() => setShowTermsModal(false)} />
+            <div className="sticky bottom-0 bg-wood-50/95 border-t border-wood-100 p-4 flex items-center justify-between gap-4 rounded-b-3xl">
+              <span className="text-xs text-wood-600 font-medium">Please review carefully before proceeding.</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  className="px-4 py-2 bg-wood-100 hover:bg-wood-200 text-wood-800 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Dismiss
+                </button>
+                <button
+                  onClick={() => {
+                    setAgreedToTerms(true);
+                    setShowTermsModal(false);
+                  }}
+                  className="px-5 py-2 bg-wood-900 hover:bg-wood-950 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm animate-pulse"
+                >
+                  I Accept Terms
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

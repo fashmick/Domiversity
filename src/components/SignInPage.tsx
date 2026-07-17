@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { GraduationCap, ArrowLeft, Mail, Lock, ShieldCheck, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { GraduationCap, ArrowLeft, Mail, Lock, ShieldCheck, HelpCircle, Eye, EyeOff, ChevronDown, User as UserIcon, Home, ChevronsUpDown, Check } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { getApiUrl } from '../utils';
 
@@ -15,6 +15,20 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Custom Role Dropdown states
+  const [isOpenRole, setIsOpenRole] = useState(false);
+  const containerRoleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRoleRef.current && !containerRoleRef.current.contains(event.target as Node)) {
+        setIsOpenRole(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,30 +95,71 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
               </div>
             )}
 
-            {/* Role Select tab */}
-            <div>
+            {/* Role Select Dropdown */}
+            <div ref={containerRoleRef} className="relative z-20">
               <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">
                 Signing In As:
               </label>
-              <div className="grid grid-cols-3 gap-1 p-1 bg-wood-50 rounded-xl border border-wood-200">
-                {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => {
-                      setRole(r);
-                      setErrorMsg('');
-                    }}
-                    className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer text-center ${
-                      role === r
-                        ? 'bg-wood-900 text-white shadow-xs'
-                        : 'text-wood-600 hover:text-wood-950'
-                    }`}
-                  >
-                    {r.charAt(0) + r.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpenRole(!isOpenRole)}
+                className="w-full flex items-center justify-between text-left text-sm text-wood-950 bg-wood-50/40 hover:bg-wood-50/75 hover:border-wood-400 border-2 border-wood-200/80 rounded-xl px-4 py-3.5 shadow-2xs transition-all cursor-pointer focus:outline-hidden focus:ring-4 focus:ring-wood-500/10"
+              >
+                <div className="flex items-center space-x-2.5 truncate">
+                  {role === 'STUDENT' && <GraduationCap size={16} className="text-wood-600 shrink-0" />}
+                  {role === 'LANDLORD' && <Home size={16} className="text-wood-600 shrink-0" />}
+                  {role === 'INSPECTOR' && <ShieldCheck size={16} className="text-wood-600 shrink-0" />}
+                  <span className="font-bold text-wood-900">
+                    {role === 'STUDENT' && 'Student Tenant'}
+                    {role === 'LANDLORD' && 'Landlord / Hostel Manager'}
+                    {role === 'INSPECTOR' && 'Certified Physical Inspector'}
+                  </span>
+                </div>
+                <ChevronsUpDown size={16} className="text-wood-400 shrink-0 ml-2" />
+              </button>
+
+              {isOpenRole && (
+                <div className="absolute z-50 mt-1.5 w-full bg-white border border-wood-200 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
+                  <div className="py-1 divide-y divide-wood-50">
+                    {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => {
+                      const isSelected = role === r;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            setRole(r);
+                            setErrorMsg('');
+                            setIsOpenRole(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-wood-50/80 transition-colors flex items-center justify-between gap-2.5 text-xs cursor-pointer ${
+                            isSelected ? 'bg-wood-50/50 text-wood-950 font-semibold' : 'text-wood-700 font-medium'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 truncate">
+                            {r === 'STUDENT' && <GraduationCap size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                            {r === 'LANDLORD' && <Home size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                            {r === 'INSPECTOR' && <ShieldCheck size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
+                            <div className="text-left">
+                              <p className="font-bold text-wood-950 text-xs sm:text-sm">
+                                {r === 'STUDENT' && 'Student Tenant'}
+                                {r === 'LANDLORD' && 'Landlord / Hostel Manager'}
+                                {r === 'INSPECTOR' && 'Certified Physical Inspector'}
+                              </p>
+                              <p className="text-[10px] text-wood-400 font-normal">
+                                {r === 'STUDENT' && 'Discover vetted rooms & protect payment in escrow'}
+                                {r === 'LANDLORD' && 'Publish secure student housing & collect rent'}
+                                {r === 'INSPECTOR' && 'Claim off-campus structural vetting jobs'}
+                              </p>
+                            </div>
+                          </div>
+                          {isSelected && <Check size={16} className="text-wood-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Email */}
@@ -156,9 +211,9 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
 
             <button
               type="submit"
-              className="w-full py-3.5 wood-pattern-btn text-white font-bold rounded-xl text-sm shadow-md mt-6 cursor-pointer flex items-center justify-center"
+              className="w-full py-3.5 wood-pattern-btn text-white font-bold rounded-xl text-sm shadow-md mt-6 cursor-pointer flex items-center justify-center hover:opacity-95 transition-opacity"
             >
-              <span>Verify & Sign In</span>
+              <span>Sign In</span>
             </button>
 
             <div className="relative my-4">

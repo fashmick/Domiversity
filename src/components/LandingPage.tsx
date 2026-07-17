@@ -18,7 +18,7 @@ const CAROUSEL_SLIDES = [
   {
     title: "100% Secure Student Escrow",
     subtitle: "Rent Held Safe From Fraud",
-    description: "Your rent stays in a secure holding subaccount. Funds are only released to the landlord 3 days after you move in and verify the room conditions match the listing perfectly.",
+    description: "Your rent stays in a secure holding subaccount. The maximum window for inspection is 3 days after payment, keeping your funds fully protected from scams.",
     badge: "Escrow Guarantee",
     badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
     image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=1200",
@@ -75,7 +75,7 @@ const STUDENT_STEPS = [
   {
     badge: "03. Move In & Release",
     title: "Risk-Free Escrow",
-    description: "Pay rent safely via Paystack. Your money stays in escrow. Once you move in and verify the conditions, release the rent. Landlords receive 90%, we keep 10%.",
+    description: "Pay rent safely via Paystack. Your money stays in escrow. You have a maximum of 3 days after payment to inspect and release the funds or open a dispute.",
     icon: CheckCircle,
     color: "amber",
     tagLine: "Financial Security",

@@ -600,7 +600,7 @@ export default function StudentDashboard({
                                 </span>
                               </div>
                               <p className="text-[11px] text-amber-700 leading-relaxed mt-1">
-                                Your rent is held safely in our escrow vault. Move in on <strong>{booking.moveInDate}</strong>. Visually inspect the room structure. If satisfied, click <strong>"Satisfied / Release"</strong>. If you are not satisfied or find serious listing discrepancies, click <strong>"Not Satisfied / Dispute"</strong>.
+                                Your rent is held safely in our escrow vault. The maximum window for physical structural inspection is <strong>3 days maximum after payment</strong>. Please inspect the room structure or verify your inspector report within this time. If satisfied, click <strong>"Satisfied / Release"</strong>. If you are not satisfied or find serious listing discrepancies, click <strong>"Not Satisfied / Dispute"</strong>.
                               </p>
                               <p className="text-[10px] text-amber-600 font-semibold mt-1">
                                 Note: If no action is taken within the 3-day countdown window, the server automatically releases the rent (90%) to the landlord.
