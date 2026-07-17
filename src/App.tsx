@@ -751,6 +751,17 @@ export default function App() {
     });
   };
 
+  const handleDeleteSchool = (schoolId: string) => {
+    setState(prev => {
+      const updated = {
+        ...prev,
+        schools: prev.schools.filter(s => s.id !== schoolId)
+      };
+      saveState(updated);
+      return updated;
+    });
+  };
+
   // 15. Roommates Post Matcher actions
   const handleCreateCohabitantPost = (postDetails: any) => {
     const newPostId = 'post_' + Date.now();
@@ -1084,7 +1095,7 @@ export default function App() {
                 onApproveUserKYC={handleApproveUserKYC}
                 onRejectUserKYC={handleRejectUserKYC}
                 onResolveDispute={handleResolveDispute}
-                onAddSchool={handleAddSchool}
+                onDeleteSchool={handleDeleteSchool}
               />
             )}
 

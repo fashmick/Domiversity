@@ -64,6 +64,18 @@ async function getPlatformState() {
     try {
       const content = fs.readFileSync(STATE_FILE_PATH, 'utf8');
       platformState = JSON.parse(content);
+
+      // Auto-migrate to the comprehensive 90 Nigerian schools list
+      if (platformState.schools && platformState.schools.length < 50) {
+        try {
+          const { INITIAL_SCHOOLS } = await import('./src/mockData');
+          platformState.schools = INITIAL_SCHOOLS;
+          savePlatformState(platformState);
+        } catch (err) {
+          console.error('Error migrating schools in server.ts:', err);
+        }
+      }
+
       enforceEscrowTimers(platformState);
       return platformState;
     } catch (e) {

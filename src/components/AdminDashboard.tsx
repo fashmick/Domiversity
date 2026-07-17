@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2 } from 'lucide-react';
 import { User, Booking, InspectorJob, School } from '../types';
 import { formatNaira, formatDate } from '../utils';
 
@@ -12,7 +12,7 @@ interface AdminDashboardProps {
   onApproveUserKYC: (userId: string) => void;
   onRejectUserKYC: (userId: string, reason: string) => void;
   onResolveDispute: (bookingId: string, action: 'RELEASE' | 'REFUND') => void;
-  onAddSchool: (school: Omit<School, 'id'>) => void;
+  onDeleteSchool: (schoolId: string) => void;
 }
 
 export default function AdminDashboard({
@@ -24,17 +24,11 @@ export default function AdminDashboard({
   onApproveUserKYC,
   onRejectUserKYC,
   onResolveDispute,
-  onAddSchool
+  onDeleteSchool
 }: AdminDashboardProps) {
   const [subTab, setSubTab] = useState<'approvals' | 'disputes' | 'moderation' | 'schools'>('approvals');
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-
-  // School Form state
-  const [schoolName, setSchoolName] = useState('');
-  const [schoolType, setSchoolType] = useState<'University' | 'Polytechnic' | 'College of Education' | 'Technical School'>('University');
-  const [schoolOwnership, setSchoolOwnership] = useState<'Federal' | 'State' | 'Private'>('Federal');
-  const [schoolState, setSchoolState] = useState('');
 
   // Filter pending KYC users
   const pendingUsers = users.filter(u => u.kycStatus === 'PENDING');
@@ -50,21 +44,6 @@ export default function AdminDashboard({
   const rentCommissions = bookings.filter(b => b.status === 'RELEASED').reduce((acc, b) => acc + (b.price * 0.1), 0);
   const inspectionCommissions = jobs.filter(j => j.status === 'COMPLETED').reduce((acc, j) => acc + 500, 0); // flat N500 per job
   const totalCommissionsEarned = rentCommissions + inspectionCommissions;
-
-  const handleSchoolSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!schoolName.trim() || !schoolState.trim()) return;
-
-    onAddSchool({
-      name: schoolName.trim(),
-      type: schoolType,
-      ownership: schoolOwnership,
-      state: schoolState.trim()
-    });
-
-    setSchoolName('');
-    setSchoolState('');
-  };
 
   const handleReject = (userId: string) => {
     if (!rejectionReason.trim()) return;
@@ -370,85 +349,60 @@ export default function AdminDashboard({
 
         {/* 4. SCHOOL DIRECTORY MANAGER SUBTAB */}
         {subTab === 'schools' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fadeIn">
             
-            {/* Create School Form (Left) */}
-            <div className="bg-white p-6 rounded-3xl border border-wood-200/80 shadow-xs h-fit space-y-4 text-xs text-wood-700">
-              <h3 className="font-display font-bold text-base text-wood-950 border-b border-wood-100 pb-3">Register New Pilot Hub</h3>
+            {/* Information Directory Panel (Left) */}
+            <div className="bg-white p-6 rounded-3xl border border-wood-200/80 shadow-xs h-fit space-y-5 text-xs text-wood-700">
+              <div className="space-y-2">
+                <div className="w-10 h-10 bg-wood-100 text-wood-700 rounded-xl flex items-center justify-center">
+                  <Landmark size={20} className="text-wood-700" />
+                </div>
+                <h3 className="font-display font-bold text-base text-wood-950">Pre-populated Directories</h3>
+                <p className="text-xs text-wood-500 leading-relaxed">
+                  Dormiversity now automatically integrates <strong>90 major higher institutions</strong> across Nigeria. This includes federal, state, and private universities and polytechnics.
+                </p>
+              </div>
               
-              <form onSubmit={handleSchoolSubmit} className="space-y-4">
-                <div>
-                  <label className="block font-bold mb-1">Institution Full Name</label>
-                  <input
-                    type="text"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                    placeholder="E.g., University of Benin (UNIBEN)"
-                    className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-xs outline-hidden focus:border-wood-500"
-                    required
-                  />
+              <div className="border-t border-wood-100 pt-4 space-y-3">
+                <span className="font-bold text-wood-800 uppercase tracking-wide block">Directory Policy:</span>
+                <ul className="space-y-2 text-wood-600 list-disc list-inside leading-relaxed">
+                  <li>Manual entry is disabled for admins to prevent human errors or formatting mismatches.</li>
+                  <li>Campus directories are fed from national accreditation databases dynamically.</li>
+                  <li>As an administrator, you have the full authority to <strong>remove or delete</strong> institutions that are inactive or have completed pilot testing.</li>
+                </ul>
+              </div>
+
+              <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl space-y-1.5 text-amber-950">
+                <div className="flex items-center space-x-1 font-bold">
+                  <Info size={14} className="text-amber-500" />
+                  <span>Important Note on Deletion</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold mb-1">School Type</label>
-                    <select
-                      value={schoolType}
-                      onChange={(e) => setSchoolType(e.target.value as any)}
-                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-2 py-2 text-xs outline-hidden"
-                    >
-                      <option value="University">University</option>
-                      <option value="Polytechnic">Polytechnic</option>
-                      <option value="College of Education">College of Ed.</option>
-                      <option value="Technical School">Technical School</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold mb-1">Ownership</label>
-                    <select
-                      value={schoolOwnership}
-                      onChange={(e) => setSchoolOwnership(e.target.value as any)}
-                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-2 py-2 text-xs outline-hidden"
-                    >
-                      <option value="Federal">Federal Gov.</option>
-                      <option value="State">State Gov.</option>
-                      <option value="Private">Private Board</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold mb-1">Nigerian State</label>
-                  <input
-                    type="text"
-                    value={schoolState}
-                    onChange={(e) => setSchoolState(e.target.value)}
-                    placeholder="E.g., Edo"
-                    className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-xs outline-hidden focus:border-wood-500"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-wood-600 hover:bg-wood-700 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer flex items-center justify-center space-x-1"
-                >
-                  <Plus size={14} />
-                  <span>Register Campus Hub</span>
-                </button>
-              </form>
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  Deleting a school immediately removes it from the search hubs and student registries. All current listing agreements under that school remain intact but hidden from discovery.
+                </p>
+              </div>
             </div>
 
             {/* School Directories list (Right) */}
             <div className="lg:col-span-2 bg-white border border-wood-200 rounded-3xl p-6 shadow-xs">
               <h3 className="font-display font-bold text-base text-wood-950 mb-4">Pilot Target Directory ({schools.length})</h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs max-h-[600px] overflow-y-auto pr-2">
                 {schools.map(s => (
-                  <div key={s.id} className="bg-wood-50/50 p-4 rounded-xl border border-wood-200/50 flex flex-col justify-between">
+                  <div key={s.id} className="bg-wood-50/50 p-4 rounded-xl border border-wood-200/50 flex flex-col justify-between relative group hover:border-wood-300 transition-colors">
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete ${s.name} from Dormiversity directories?`)) {
+                          onDeleteSchool(s.id);
+                        }
+                      }}
+                      title="Delete Institution Directory"
+                      className="absolute top-3 right-3 text-wood-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-all cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                     <div>
-                      <h4 className="font-bold text-wood-950 leading-tight">{s.name}</h4>
+                      <h4 className="font-bold text-wood-950 leading-tight pr-6">{s.name}</h4>
                       <p className="text-[10px] text-wood-400 mt-1 uppercase font-semibold tracking-wider">State: {s.state}</p>
                     </div>
 
