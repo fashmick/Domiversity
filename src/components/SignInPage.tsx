@@ -206,11 +206,26 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
           </form>
 
           {/* Secure Platform Policy Guard */}
-          <div className="mt-6 pt-5 border-t border-wood-100 flex items-start space-x-2 text-[11px] text-wood-500 leading-normal">
-            <ShieldCheck size={16} className="text-wood-400 shrink-0 mt-0.5" />
-            <p>
-              Your session is protected with escrow security safeguards. Do not share credentials or transfer funds outside of the Paystack gateway.
-            </p>
+          <div className="mt-6 pt-5 border-t border-wood-100 flex flex-col space-y-4">
+            <div className="flex items-start space-x-2 text-[11px] text-wood-500 leading-normal">
+              <ShieldCheck size={16} className="text-wood-400 shrink-0 mt-0.5" />
+              <p>
+                Your session is protected with escrow security safeguards. Do not share credentials or transfer funds outside of the Paystack gateway.
+              </p>
+            </div>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  window.history.pushState({}, '', '/admin-access');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="text-[11px] font-bold text-wood-400 hover:text-amber-600 transition-colors cursor-pointer inline-flex items-center space-x-1"
+              >
+                <span>Access Administrative Portal (Gated)</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

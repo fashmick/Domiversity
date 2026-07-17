@@ -78,17 +78,24 @@ export default function SchoolSelect({
         </div>
         <div className="flex items-center space-x-1 shrink-0 ml-2">
           {value && (
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 onChange('');
               }}
-              className="p-1 text-wood-400 hover:text-red-500 rounded-full hover:bg-wood-100/50 transition-colors cursor-pointer"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  onChange('');
+                }
+              }}
+              className="p-1 text-wood-400 hover:text-red-500 rounded-full hover:bg-wood-100/50 transition-colors cursor-pointer inline-flex items-center justify-center"
               title="Clear selection"
             >
               <X size={12} />
-            </button>
+            </span>
           )}
           <ChevronsUpDown size={16} className="text-wood-400 shrink-0" />
         </div>
