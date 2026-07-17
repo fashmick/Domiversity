@@ -36,6 +36,8 @@ export default function AdminDashboard({
   const [paystackPubKey, setPaystackPubKey] = useState('');
   const [paystackSecKey, setPaystackSecKey] = useState('');
   const [resendKey, setResendKey] = useState('');
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isLoadingKeys, setIsLoadingKeys] = useState(false);
@@ -55,6 +57,8 @@ export default function AdminDashboard({
           setPaystackPubKey(data.settings.paystackPublicKey || '');
           setPaystackSecKey(data.settings.paystackSecretKey || '');
           setResendKey(data.settings.resendApiKey || '');
+          setGoogleClientId(data.settings.googleClientId || '');
+          setGoogleClientSecret(data.settings.googleClientSecret || '');
         }
       })
       .catch(err => console.error('Error loading API configurations:', err))
@@ -77,7 +81,9 @@ export default function AdminDashboard({
         body: JSON.stringify({
           paystackPublicKey: paystackPubKey,
           paystackSecretKey: paystackSecKey,
-          resendApiKey: resendKey
+          resendApiKey: resendKey,
+          googleClientId,
+          googleClientSecret
         })
       });
       if (res.ok) {
@@ -565,6 +571,40 @@ export default function AdminDashboard({
                   </div>
                   <p className="text-[10px] text-wood-400">
                     Resend acts as the system SMTP relay, executing student verification receipts, escrow disputes reports, and inspections notifications.
+                  </p>
+                </div>
+
+                {/* Google OAuth Integration Section */}
+                <div className="space-y-4 pt-2">
+                  <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center space-x-1.5 border-b border-wood-50 pb-1.5">
+                    <Key size={14} />
+                    <span>Google OAuth 2.0 Identity Credentials</span>
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-wood-700">Google Client ID</label>
+                      <input
+                        type="text"
+                        value={googleClientId}
+                        onChange={(e) => setGoogleClientId(e.target.value)}
+                        placeholder="your-client-id.apps.googleusercontent.com"
+                        className="w-full bg-wood-50/50 border border-wood-200 rounded-xl px-4 py-2.5 text-xs text-wood-900 outline-hidden focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-wood-700">Google Client Secret</label>
+                      <input
+                        type="password"
+                        value={googleClientSecret}
+                        onChange={(e) => setGoogleClientSecret(e.target.value)}
+                        placeholder="GOCSPX-..."
+                        className="w-full bg-wood-50/50 border border-wood-200 rounded-xl px-4 py-2.5 text-xs text-wood-900 outline-hidden focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-wood-400">
+                    Enter your Google Cloud Console Web Application credentials. Be sure to register the correct redirect URI shown in the auth flow callback window.
                   </p>
                 </div>
 

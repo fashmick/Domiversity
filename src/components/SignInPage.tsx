@@ -85,8 +85,8 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
               <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">
                 Signing In As:
               </label>
-              <div className="grid grid-cols-4 gap-1 p-1 bg-wood-50 rounded-xl border border-wood-200">
-                {(['STUDENT', 'LANDLORD', 'INSPECTOR', 'ADMIN'] as const).map((r) => (
+              <div className="grid grid-cols-3 gap-1 p-1 bg-wood-50 rounded-xl border border-wood-200">
+                {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -100,7 +100,7 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
                         : 'text-wood-600 hover:text-wood-950'
                     }`}
                   >
-                    {r === 'ADMIN' ? 'Admin' : r.charAt(0) + r.slice(1).toLowerCase()}
+                    {r.charAt(0) + r.slice(1).toLowerCase()}
                   </button>
                 ))}
               </div>

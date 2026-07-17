@@ -38,6 +38,8 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationError, setVerificationError] = useState('');
   const [tempUser, setTempUser] = useState<User | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [sandboxCode, setSandboxCode] = useState('');
 
   // Password strength logic
   const getPasswordStrength = (pass: string) => {
@@ -140,18 +142,40 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
       department: role === 'STUDENT' ? (department.trim() || 'General Studies') : undefined,
     };
 
-    setTempUser(newUser);
-    setIsVerifying(true);
+    setIsSendingOtp(true);
+    fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: cleanPhone,
+        role: role
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        setErrorMsg(data.error);
+      } else {
+        setSandboxCode(data.sandboxCode || '');
+        setTempUser(newUser);
+        setIsVerifying(true);
+      }
+    })
+    .catch(err => {
+      setErrorMsg('Failed to reach verification service. Please check your internet connection.');
+    })
+    .finally(() => {
+      setIsSendingOtp(false);
+    });
   };
 
-  const handleVerifyCode = (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setVerificationError('');
-
-    if (verificationCode !== '234196' && verificationCode.trim() !== '123456') {
-      setVerificationError('Incorrect verification code. For test mode, please enter the code: 234196');
-      return;
-    }
 
     if (!tempUser) {
       setVerificationError('An unexpected error occurred. Please try signing up again.');
@@ -159,6 +183,23 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
     }
 
     try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: tempUser.email,
+          code: verificationCode
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setVerificationError(data.error || 'Incorrect code.');
+        return;
+      }
+
       onSignUp(tempUser);
       setIsVerifying(false);
       setSuccessMsg('Account verified and created successfully! Redirecting to Sign In page...');
@@ -166,7 +207,7 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
         window.history.pushState({}, '', '/signin');
       }, 2000);
     } catch (err: any) {
-      setVerificationError(err.message || 'Error occurred while saving your account.');
+      setVerificationError(err.message || 'Error occurred while verifying your account.');
     }
   };
 
@@ -239,10 +280,17 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
                 </div>
               )}
 
-              <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4 text-center">
-                <span className="text-xs text-amber-800 font-bold">🧪 Sandbox Demo Code:</span>
-                <span className="block text-lg font-mono font-bold tracking-widest text-amber-950 mt-1">234196</span>
-              </div>
+              {sandboxCode ? (
+                <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4 text-center animate-fadeIn">
+                  <span className="text-xs text-amber-800 font-bold">🧪 Sandbox Demo Code:</span>
+                  <span className="block text-lg font-mono font-bold tracking-widest text-amber-950 mt-1">{sandboxCode}</span>
+                </div>
+              ) : (
+                <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-4 text-center animate-fadeIn">
+                  <span className="text-xs text-emerald-800 font-bold">📨 Live Dispatch Active</span>
+                  <p className="text-[10px] text-emerald-600 mt-1">We sent a secure validation passcode to your email. Please check your spam folder if it doesn't arrive within a few seconds.</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2 text-center">
@@ -480,9 +528,17 @@ export default function SignUpPage({ schools, onSignUp, onNavigateToLanding }: S
 
               <button
                 type="submit"
-                className="w-full py-3.5 wood-pattern-btn text-white font-bold rounded-xl text-sm shadow-md mt-6 cursor-pointer flex items-center justify-center space-x-1.5 hover:opacity-95 transition-opacity"
+                disabled={isSendingOtp}
+                className="w-full py-3.5 wood-pattern-btn disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm shadow-md mt-6 cursor-pointer flex items-center justify-center space-x-1.5 hover:opacity-95 transition-opacity"
               >
-                <span>Register Vetted Profile</span>
+                {isSendingOtp ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Sending activation code...</span>
+                  </>
+                ) : (
+                  <span>Register Vetted Profile</span>
+                )}
               </button>
 
               <div className="relative my-4">
