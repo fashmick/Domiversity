@@ -887,7 +887,7 @@ export default function App() {
   const unreadMessagesCount = state.messages.filter(m => m.senderId !== activeUser.id && m.isBlocked === false && state.chats.some(c => c.id === m.threadId && (c.studentId === activeUser.id || c.otherId === activeUser.id))).length % 3;
 
   // Render check for gated administrative portal
-  if (currentPath === '/admin-access') {
+  if (currentPath === '/dormiversity-control-90') {
     return (
       <AdminLogin onSuccess={(token) => {
         sessionStorage.setItem('dormiversity_admin_token', token);
@@ -916,11 +916,11 @@ export default function App() {
             <div className="pt-4 space-y-3">
               <button
                 onClick={() => {
-                  window.history.pushState({}, '', '/admin-access');
+                  window.history.pushState({}, '', '/dormiversity-control-90');
                 }}
                 className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-wood-950 font-bold rounded-xl text-xs transition-all shadow-md cursor-pointer uppercase tracking-wider font-sans"
               >
-                Authenticate at Admin-Access
+                Authenticate at System Console
               </button>
               <button
                 onClick={() => {
@@ -1092,6 +1092,7 @@ export default function App() {
                 bookings={state.bookings}
                 jobs={state.jobs}
                 messages={state.messages}
+                adminToken={adminToken}
                 onApproveUserKYC={handleApproveUserKYC}
                 onRejectUserKYC={handleRejectUserKYC}
                 onResolveDispute={handleResolveDispute}

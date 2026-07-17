@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2, Key, CreditCard, Mail, Sliders } from 'lucide-react';
 import { User, Booking, InspectorJob, School } from '../types';
 import { formatNaira, formatDate } from '../utils';
 
@@ -9,6 +9,7 @@ interface AdminDashboardProps {
   bookings: Booking[];
   jobs: InspectorJob[];
   messages: any[];
+  adminToken?: string | null;
   onApproveUserKYC: (userId: string) => void;
   onRejectUserKYC: (userId: string, reason: string) => void;
   onResolveDispute: (bookingId: string, action: 'RELEASE' | 'REFUND') => void;
@@ -21,14 +22,76 @@ export default function AdminDashboard({
   bookings,
   jobs,
   messages,
+  adminToken,
   onApproveUserKYC,
   onRejectUserKYC,
   onResolveDispute,
   onDeleteSchool
 }: AdminDashboardProps) {
-  const [subTab, setSubTab] = useState<'approvals' | 'disputes' | 'moderation' | 'schools'>('approvals');
+  const [subTab, setSubTab] = useState<'approvals' | 'disputes' | 'moderation' | 'schools' | 'integrations'>('approvals');
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Integrations state
+  const [paystackPubKey, setPaystackPubKey] = useState('');
+  const [paystackSecKey, setPaystackSecKey] = useState('');
+  const [resendKey, setResendKey] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isLoadingKeys, setIsLoadingKeys] = useState(false);
+
+  // Load existing credentials when Integrations tab is activated
+  useEffect(() => {
+    if (subTab === 'integrations' && adminToken) {
+      setIsLoadingKeys(true);
+      fetch('/api/admin/data', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.settings) {
+          setPaystackPubKey(data.settings.paystackPublicKey || '');
+          setPaystackSecKey(data.settings.paystackSecretKey || '');
+          setResendKey(data.settings.resendApiKey || '');
+        }
+      })
+      .catch(err => console.error('Error loading API configurations:', err))
+      .finally(() => setIsLoadingKeys(false));
+    }
+  }, [subTab, adminToken]);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminToken) return;
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          paystackPublicKey: paystackPubKey,
+          paystackSecretKey: paystackSecKey,
+          resendApiKey: resendKey
+        })
+      });
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: 'API Integration Credentials updated successfully!' });
+      } else {
+        const errData = await res.json();
+        setSaveMessage({ type: 'error', text: errData.error || 'Failed to save integrations configuration.' });
+      }
+    } catch (err) {
+      setSaveMessage({ type: 'error', text: 'Network connection failed.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Filter pending KYC users
   const pendingUsers = users.filter(u => u.kycStatus === 'PENDING');
@@ -91,6 +154,12 @@ export default function AdminDashboard({
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${subTab === 'schools' ? 'bg-white text-wood-950 shadow-2xs' : 'text-wood-600 hover:text-wood-950'}`}
             >
               Institution Directories
+            </button>
+            <button
+              onClick={() => setSubTab('integrations')}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${subTab === 'integrations' ? 'bg-white text-wood-950 shadow-2xs' : 'text-wood-600 hover:text-wood-950'}`}
+            >
+              Integrations Settings
             </button>
           </div>
         </div>
@@ -419,6 +488,119 @@ export default function AdminDashboard({
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* 5. INTEGRATIONS SETTINGS SUBTAB */}
+        {subTab === 'integrations' && (
+          <div className="bg-white border border-wood-200 rounded-3xl p-6 sm:p-8 shadow-xs max-w-2xl mx-auto space-y-6">
+            <div className="flex items-start space-x-3 border-b border-wood-100 pb-4">
+              <div className="bg-amber-500/10 text-amber-600 p-2.5 rounded-xl">
+                <Sliders size={20} />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-lg text-wood-950">Third-Party Service Configurations</h3>
+                <p className="text-xs text-wood-500 mt-1">Configure live production keys for Paystack secure escrow gateway and Resend notification deliverability pipelines.</p>
+              </div>
+            </div>
+
+            {isLoadingKeys ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-xs text-wood-500 font-semibold animate-pulse">Loading secure service configurations...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                
+                {/* Paystack Integration Section */}
+                <div className="space-y-4">
+                  <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center space-x-1.5 border-b border-wood-50 pb-1.5">
+                    <CreditCard size={14} />
+                    <span>Paystack Escrow System Credentials</span>
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-wood-700">Paystack Public Key</label>
+                      <input
+                        type="text"
+                        value={paystackPubKey}
+                        onChange={(e) => setPaystackPubKey(e.target.value)}
+                        placeholder="pk_live_..."
+                        className="w-full bg-wood-50/50 border border-wood-200 rounded-xl px-4 py-2.5 text-xs text-wood-900 outline-hidden focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-wood-700">Paystack Secret Key</label>
+                      <input
+                        type="password"
+                        value={paystackSecKey}
+                        onChange={(e) => setPaystackSecKey(e.target.value)}
+                        placeholder="sk_live_..."
+                        className="w-full bg-wood-50/50 border border-wood-200 rounded-xl px-4 py-2.5 text-xs text-wood-900 outline-hidden focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-wood-400">
+                    Your keys are stored securely on the isolated administrative container server environment. Paystack powers all automated 90% rental escrows.
+                  </p>
+                </div>
+
+                {/* Resend Integration Section */}
+                <div className="space-y-4 pt-2">
+                  <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center space-x-1.5 border-b border-wood-50 pb-1.5">
+                    <Mail size={14} />
+                    <span>Resend Email Dispatcher API Key</span>
+                  </span>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-wood-700">Resend API Key</label>
+                    <input
+                      type="password"
+                      value={resendKey}
+                      onChange={(e) => setResendKey(e.target.value)}
+                      placeholder="re_..."
+                      className="w-full bg-wood-50/50 border border-wood-200 rounded-xl px-4 py-2.5 text-xs text-wood-900 outline-hidden focus:border-amber-500 focus:bg-white focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                    />
+                  </div>
+                  <p className="text-[10px] text-wood-400">
+                    Resend acts as the system SMTP relay, executing student verification receipts, escrow disputes reports, and inspections notifications.
+                  </p>
+                </div>
+
+                {saveMessage && (
+                  <div className={`p-4 rounded-xl text-xs text-center font-semibold border ${
+                    saveMessage.type === 'success' 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-800'
+                  }`}>
+                    {saveMessage.type === 'success' ? '✅' : '⚠️'} {saveMessage.text}
+                  </div>
+                )}
+
+                {/* Submit controls */}
+                <div className="pt-4 border-t border-wood-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-wood-200 disabled:text-wood-400 text-wood-950 font-bold rounded-xl text-xs transition-all shadow-xs flex items-center space-x-2 cursor-pointer uppercase tracking-wider"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-wood-950 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Saving credentials...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={14} />
+                        <span>Apply & Deploy Integrations</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            )}
           </div>
         )}
 

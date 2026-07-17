@@ -213,19 +213,6 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
                 Your session is protected with escrow security safeguards. Do not share credentials or transfer funds outside of the Paystack gateway.
               </p>
             </div>
-            
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  window.history.pushState({}, '', '/admin-access');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                }}
-                className="text-[11px] font-bold text-wood-400 hover:text-amber-600 transition-colors cursor-pointer inline-flex items-center space-x-1"
-              >
-                <span>Access Administrative Portal (Gated)</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>

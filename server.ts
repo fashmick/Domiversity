@@ -280,13 +280,40 @@ app.post('/api/simulate-fast-forward', async (req, res) => {
 // Server-side gated admin endpoints
 app.get('/api/admin/data', authenticateAdmin, async (req, res) => {
   const state = await getPlatformState();
+  if (!state.settings) {
+    state.settings = {
+      paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+      paystackSecretKey: process.env.PAYSTACK_SECRET_KEY || '',
+      resendApiKey: process.env.RESEND_API_KEY || ''
+    };
+  }
   // Return admin-specific sub-states to comply with "verify token before returning data"
   res.json({
     users: state.users,
     bookings: state.bookings,
     jobs: state.jobs,
-    messages: state.messages
+    messages: state.messages,
+    settings: state.settings
   });
+});
+
+app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
+  const { paystackPublicKey, paystackSecretKey, resendApiKey } = req.body;
+  const state = await getPlatformState();
+  
+  state.settings = {
+    paystackPublicKey: paystackPublicKey || '',
+    paystackSecretKey: paystackSecretKey || '',
+    resendApiKey: resendApiKey || ''
+  };
+
+  // Update in process.env so any external SDK modules can access them dynamically
+  process.env.PAYSTACK_PUBLIC_KEY = state.settings.paystackPublicKey;
+  process.env.PAYSTACK_SECRET_KEY = state.settings.paystackSecretKey;
+  process.env.RESEND_API_KEY = state.settings.resendApiKey;
+
+  savePlatformState(state);
+  res.json({ status: 'success', settings: state.settings });
 });
 
 // --- GOOGLE OAUTH 2.0 PIPELINE ---
