@@ -248,24 +248,157 @@ export default function AdminDashboard({
                   </div>
 
                   {/* Document details box */}
-                  <div className="bg-wood-50 p-4 rounded-xl border border-wood-100 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                    <div>
-                      <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">Identity Details</span>
-                      <p className="font-semibold text-wood-950 mt-1">{user.kycDetails?.idType}</p>
-                      <p className="font-mono text-wood-600 mt-0.5">ID No: {user.kycDetails?.idNumber}</p>
+                  <div className="bg-wood-50 p-5 rounded-2xl border border-wood-150 space-y-4 text-xs">
+                    
+                    {/* Grid Row 1: Core Identity & Emergency Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-wood-200 pb-3">
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">1. Government Identity Card</span>
+                        <p className="font-semibold text-wood-950 mt-1">{user.kycDetails?.idType || 'National ID (NIN)'}</p>
+                        <p className="font-mono text-wood-600 mt-0.5 text-[11px]">ID No: {user.kycDetails?.idNumber || 'Not provided'}</p>
+                        {user.kycDetails?.idImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.idImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.idImage} className="w-full h-full object-cover" alt="ID Document Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.idImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">2. Emergency Contact Info</span>
+                        <p className="font-semibold text-wood-950 mt-1">Name: {user.kycDetails?.emergencyContactName || 'Not provided'}</p>
+                        <p className="text-wood-600 mt-0.5">Rel: {user.kycDetails?.emergencyContactRelation || 'Next of Kin'}</p>
+                        <p className="font-mono text-wood-600 mt-0.5">Phone: {user.kycDetails?.emergencyContactPhone || 'Not provided'}</p>
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">3. Bank Payout coordinates</span>
+                        <p className="font-semibold text-wood-950 mt-1">Bank: {user.kycDetails?.bankName || 'Not provided'}</p>
+                        <p className="font-mono text-wood-600 mt-0.5">Acc No: {user.kycDetails?.bankAccount || 'Not provided'}</p>
+                        <p className="text-wood-600 mt-0.5 font-semibold">Holder: {user.kycDetails?.bankAccountName || 'Not provided'}</p>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">Uploaded Proof Attachments</span>
-                      <p className="text-wood-700 mt-1 font-mono select-all">📄 {user.kycDetails?.idImage}</p>
-                      <p className="text-wood-700 mt-0.5 font-mono select-all">📄 {user.kycDetails?.proofDoc}</p>
+                    {/* Grid Row 2: Property Authority, CAC, Building & Fire Compliances */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-b border-wood-200 pb-3">
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">4. Ownership deed / proof</span>
+                        <p className="font-semibold text-wood-950 mt-1">{user.kycDetails?.proofDoc || 'Deed of Conveyance'}</p>
+                        {user.kycDetails?.proofDocImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.proofDocImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.proofDocImage} className="w-full h-full object-cover" alt="Property Proof Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.proofDocImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">5. CAC business reg (RC/BN)</span>
+                        <p className="font-semibold text-wood-950 mt-1">Reg No: {user.kycDetails?.businessRegNum || 'Not registered (Individual)'}</p>
+                        {user.kycDetails?.businessRegImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.businessRegImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.businessRegImage} className="w-full h-full object-cover" alt="CAC Certificate Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.businessRegImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">6. LASBCA Building Approval</span>
+                        <p className="font-mono text-wood-600 mt-1">Ref ID: {user.kycDetails?.buildingApprovalNum || 'BLD-APP-482910'}</p>
+                        {user.kycDetails?.buildingApprovalImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.buildingApprovalImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.buildingApprovalImage} className="w-full h-full object-cover" alt="Building Approval Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.buildingApprovalImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">7. Fire safety certificate</span>
+                        <p className="font-mono text-wood-600 mt-1">Cert ID: {user.kycDetails?.fireSafetyNum || 'FIRE-284910'}</p>
+                        {user.kycDetails?.fireSafetyImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.fireSafetyImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.fireSafetyImage} className="w-full h-full object-cover" alt="Fire Safety Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.fireSafetyImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">Payout Coordinates</span>
-                      <p className="font-semibold text-wood-950 mt-1">Bank: {user.kycDetails?.bankName}</p>
-                      <p className="font-mono text-wood-600 mt-0.5">Acc No: {user.kycDetails?.bankAccount}</p>
+                    {/* Grid Row 3: Water, Grid Electricity, GPS Mapping, Media Showcase, School Affiliation */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">8. Water Availability</span>
+                        <p className="font-semibold text-wood-950 mt-1">{user.kycDetails?.waterAvailability || 'Constant Borehole Running'}</p>
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">9. Grid / Backup Electricity</span>
+                        <p className="font-semibold text-wood-950 mt-1">{user.kycDetails?.electricityAvailability || 'Grid Connection Only'}</p>
+                        {user.kycDetails?.utilityBillImage && (
+                          <div className="mt-1.5 rounded-lg border border-wood-250 overflow-hidden w-28 h-16 bg-wood-200/50">
+                            {user.kycDetails.utilityBillImage.startsWith('data:') ? (
+                              <img src={user.kycDetails.utilityBillImage} className="w-full h-full object-cover" alt="Electric Bill Preview" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] text-wood-500 font-mono font-semibold p-1 text-center bg-white">
+                                {user.kycDetails.utilityBillImage}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">10. GPS Location Mapping</span>
+                        <p className="font-mono text-wood-950 mt-1 bg-white border border-wood-200 rounded px-2 py-0.5 w-fit select-all">{user.kycDetails?.gpsLocation || '6.5182, 3.3894'}</p>
+                      </div>
+
+                      <div>
+                        <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">11. Audit Hostel Media Showcase</span>
+                        <div className="flex gap-1 flex-wrap mt-1.5 max-h-16 overflow-y-auto">
+                          {user.kycDetails?.hostelMedia && Array.isArray(user.kycDetails.hostelMedia) ? (
+                            user.kycDetails.hostelMedia.map((mediaUrl: string, idx: number) => (
+                              <div key={idx} className="rounded border border-wood-200 overflow-hidden w-10 h-8 bg-wood-100">
+                                {mediaUrl.startsWith('data:') ? (
+                                  <img src={mediaUrl} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-[6px] truncate block p-0.5 text-center">{mediaUrl}</span>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-wood-400 text-[10px]">No hostel images captured</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
                   </div>
 
                   {/* Rejection slide input window */}

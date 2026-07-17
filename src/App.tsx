@@ -997,7 +997,7 @@ export default function App() {
           />
 
           <main className="transition-all duration-200">
-            {activeTab === 'dashboard' && activeUser.role === 'STUDENT' && (
+            {['dashboard', 'roommates', 'bookings', 'profile'].includes(activeTab) && activeUser.role === 'STUDENT' && (
               <StudentDashboard
                 activeStudent={activeUser}
                 schools={state.schools}
@@ -1016,54 +1016,15 @@ export default function App() {
                 onCloseCohabitantPost={handleCloseCohabitantPost}
                 onUploadStudentKYC={handleUploadStudentKYC}
                 onUpdateProfile={handleUpdateProfile}
+                initialSubTab={
+                  activeTab === 'profile' ? 'profile' :
+                  activeTab === 'bookings' ? 'bookings' :
+                  activeTab === 'roommates' ? 'roommates' : 'search'
+                }
               />
             )}
 
-            {activeTab === 'roommates' && activeUser.role === 'STUDENT' && (
-              <StudentDashboard
-                activeStudent={activeUser}
-                schools={state.schools}
-                hostels={state.hostels}
-                bookings={state.bookings}
-                jobs={state.jobs}
-                cohabitants={state.cohabitants}
-                bookmarks={state.bookmarks}
-                onToggleBookmark={handleToggleBookmark}
-                onBookHostel={handleBookHostel}
-                onRequestInspection={handleRequestInspection}
-                onConfirmSatisfaction={handleConfirmSatisfaction}
-                onOpenDispute={handleOpenDispute}
-                onNavigateToChat={handleNavigateToChat}
-                onCreateCohabitantPost={handleCreateCohabitantPost}
-                onCloseCohabitantPost={handleCloseCohabitantPost}
-                onUploadStudentKYC={handleUploadStudentKYC}
-                onUpdateProfile={handleUpdateProfile}
-              />
-            )}
-
-            {activeTab === 'bookings' && activeUser.role === 'STUDENT' && (
-              <StudentDashboard
-                activeStudent={activeUser}
-                schools={state.schools}
-                hostels={state.hostels}
-                bookings={state.bookings}
-                jobs={state.jobs}
-                cohabitants={state.cohabitants}
-                bookmarks={state.bookmarks}
-                onToggleBookmark={handleToggleBookmark}
-                onBookHostel={handleBookHostel}
-                onRequestInspection={handleRequestInspection}
-                onConfirmSatisfaction={handleConfirmSatisfaction}
-                onOpenDispute={handleOpenDispute}
-                onNavigateToChat={handleNavigateToChat}
-                onCreateCohabitantPost={handleCreateCohabitantPost}
-                onCloseCohabitantPost={handleCloseCohabitantPost}
-                onUploadStudentKYC={handleUploadStudentKYC}
-                onUpdateProfile={handleUpdateProfile}
-              />
-            )}
-
-            {activeTab === 'dashboard' && activeUser.role === 'LANDLORD' && (
+            {['dashboard', 'bookings', 'profile', 'payouts', 'verification'].includes(activeTab) && activeUser.role === 'LANDLORD' && (
               <LandlordDashboard
                 activeLandlord={activeUser}
                 schools={state.schools}
@@ -1075,25 +1036,16 @@ export default function App() {
                 onToggleListingAvailable={handleToggleListingAvailable}
                 onNavigateToChat={handleNavigateToChat}
                 onUpdateProfile={handleUpdateProfile}
+                initialSubTab={
+                  activeTab === 'profile' ? 'profile' :
+                  activeTab === 'bookings' ? 'escrows' :
+                  activeTab === 'payouts' ? 'payouts' :
+                  activeTab === 'verification' ? 'verification' : 'listings'
+                }
               />
             )}
 
-            {activeTab === 'bookings' && activeUser.role === 'LANDLORD' && (
-              <LandlordDashboard
-                activeLandlord={activeUser}
-                schools={state.schools}
-                hostels={state.hostels}
-                bookings={state.bookings}
-                jobs={state.jobs}
-                onUploadKYC={handleUploadKYC}
-                onAddListing={handleAddListing}
-                onToggleListingAvailable={handleToggleListingAvailable}
-                onNavigateToChat={handleNavigateToChat}
-                onUpdateProfile={handleUpdateProfile}
-              />
-            )}
-
-            {activeTab === 'dashboard' && activeUser.role === 'INSPECTOR' && (
+            {['dashboard', 'profile'].includes(activeTab) && activeUser.role === 'INSPECTOR' && (
               <InspectorDashboard
                 activeInspector={activeUser}
                 schools={state.schools}
@@ -1102,6 +1054,7 @@ export default function App() {
                 onAcceptJob={handleAcceptJob}
                 onSubmitReport={handleSubmitReport}
                 onUpdateProfile={handleUpdateProfile}
+                initialSubTab={activeTab === 'profile' ? 'profile' : 'available'}
               />
             )}
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { GraduationCap, Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut } from 'lucide-react';
+import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut } from 'lucide-react';
 import { User, UserRole } from '../types';
+import DormiversityLogo from './DormiversityLogo';
 
 interface NavigationProps {
   activeUser: User;
@@ -32,10 +33,7 @@ export default function Navigation({
           {/* Logo & Tab Navigation */}
           <div className="flex">
             <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => onNavigate('dashboard')}>
-              <div className="bg-wood-500 text-white p-1.5 rounded-lg mr-2">
-                <GraduationCap size={20} />
-              </div>
-              <span className="font-display font-bold text-lg text-wood-900 tracking-tight">Dormiversity</span>
+              <DormiversityLogo size={34} showText={true} textSize="text-lg" textColor="text-wood-900" />
             </div>
 
             {/* Desktop Navigation Links */}
@@ -125,8 +123,8 @@ export default function Navigation({
               <span className="hidden sm:inline-block">Signed In As:</span>
               <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold text-white ${
                 currentRole === 'STUDENT' ? 'bg-blue-600' :
-                currentRole === 'LANDLORD' ? 'bg-emerald-600' :
-                currentRole === 'INSPECTOR' ? 'bg-amber-600' : 'bg-red-600'
+                currentRole === 'INSPECTOR' ? 'bg-amber-600' :
+                currentRole === 'LANDLORD' ? 'bg-emerald-600' : 'bg-red-600'
               }`}>
                 {currentRole}
               </span>
@@ -135,15 +133,20 @@ export default function Navigation({
 
             {/* Profile Avatar & Actions */}
             <div className="flex items-center space-x-2">
-              <div className="w-9 h-9 rounded-full bg-wood-200 overflow-hidden border border-wood-200">
+              <button
+                type="button"
+                onClick={() => onNavigate('profile')}
+                className="w-9 h-9 rounded-full bg-wood-200 overflow-hidden border border-wood-250 focus:outline-none transition-all cursor-pointer hover:ring-2 hover:ring-wood-500"
+                title="View My Profile & Settings"
+              >
                 {activeUser.profilePicture ? (
-                  <img src={activeUser.profilePicture} alt={activeUser.name} className="w-full h-full object-cover" />
+                  <img src={activeUser.profilePicture} alt={activeUser.name} className="w-full h-full object-cover animate-fadeIn" />
                 ) : (
                   <div className="w-full h-full bg-wood-500 text-white font-bold flex items-center justify-center text-sm">
-                    {activeUser.name.charAt(0)}
+                    {activeUser.name ? activeUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
-              </div>
+              </button>
 
               <button
                 onClick={onLogout}

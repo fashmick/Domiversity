@@ -103,13 +103,13 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
               <button
                 type="button"
                 onClick={() => setIsOpenRole(!isOpenRole)}
-                className="w-full flex items-center justify-between text-left text-sm text-wood-950 bg-wood-50/40 hover:bg-wood-50/75 hover:border-wood-400 border-2 border-wood-200/80 rounded-xl px-4 py-3.5 shadow-2xs transition-all cursor-pointer focus:outline-hidden focus:ring-4 focus:ring-wood-500/10"
+                className="w-full flex items-center justify-between text-left text-sm text-wood-950 bg-wood-50/50 border border-wood-200 hover:border-wood-400 rounded-xl px-4 py-3 shadow-2xs transition-all cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-wood-500"
               >
                 <div className="flex items-center space-x-2.5 truncate">
-                  {role === 'STUDENT' && <GraduationCap size={16} className="text-wood-600 shrink-0" />}
-                  {role === 'LANDLORD' && <Home size={16} className="text-wood-600 shrink-0" />}
-                  {role === 'INSPECTOR' && <ShieldCheck size={16} className="text-wood-600 shrink-0" />}
-                  <span className="font-bold text-wood-900">
+                  {role === 'STUDENT' && <GraduationCap size={16} className="text-wood-500 shrink-0" />}
+                  {role === 'LANDLORD' && <Home size={16} className="text-wood-500 shrink-0" />}
+                  {role === 'INSPECTOR' && <ShieldCheck size={16} className="text-wood-500 shrink-0" />}
+                  <span className="font-semibold truncate text-wood-900">
                     {role === 'STUDENT' && 'Student Tenant'}
                     {role === 'LANDLORD' && 'Landlord / Hostel Manager'}
                     {role === 'INSPECTOR' && 'Certified Physical Inspector'}
@@ -120,7 +120,10 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
 
               {isOpenRole && (
                 <div className="absolute z-50 mt-1.5 w-full bg-white border border-wood-200 rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
-                  <div className="py-1 divide-y divide-wood-50">
+                  <div className="p-2.5 bg-wood-50 border-b border-wood-100 flex items-center space-x-2 text-[10px] font-bold text-wood-400 tracking-wider uppercase">
+                    <span>Select Portal Access</span>
+                  </div>
+                  <div className="py-1 divide-y divide-wood-50/60 max-h-60 overflow-y-auto">
                     {(['STUDENT', 'LANDLORD', 'INSPECTOR'] as const).map((r) => {
                       const isSelected = role === r;
                       return (
@@ -132,28 +135,37 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
                             setErrorMsg('');
                             setIsOpenRole(false);
                           }}
-                          className={`w-full text-left px-4 py-3 hover:bg-wood-50/80 transition-colors flex items-center justify-between gap-2.5 text-xs cursor-pointer ${
+                          className={`w-full text-left px-4 py-2.5 hover:bg-wood-50/80 transition-colors flex items-center justify-between gap-2 text-xs cursor-pointer ${
                             isSelected ? 'bg-wood-50/50 text-wood-950 font-semibold' : 'text-wood-700 font-medium'
                           }`}
                         >
-                          <div className="flex items-center space-x-2.5 truncate">
-                            {r === 'STUDENT' && <GraduationCap size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
-                            {r === 'LANDLORD' && <Home size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
-                            {r === 'INSPECTOR' && <ShieldCheck size={16} className={`${isSelected ? 'text-wood-900' : 'text-wood-400'} shrink-0`} />}
-                            <div className="text-left">
-                              <p className="font-bold text-wood-950 text-xs sm:text-sm">
-                                {r === 'STUDENT' && 'Student Tenant'}
-                                {r === 'LANDLORD' && 'Landlord / Hostel Manager'}
-                                {r === 'INSPECTOR' && 'Certified Physical Inspector'}
-                              </p>
-                              <p className="text-[10px] text-wood-400 font-normal">
+                          <div className="flex items-start space-x-2.5 truncate">
+                            <div className="mt-0.5 shrink-0">
+                              {r === 'STUDENT' && <GraduationCap size={14} className={isSelected ? 'text-wood-900' : 'text-wood-400'} />}
+                              {r === 'LANDLORD' && <Home size={14} className={isSelected ? 'text-wood-900' : 'text-wood-400'} />}
+                              {r === 'INSPECTOR' && <ShieldCheck size={14} className={isSelected ? 'text-wood-900' : 'text-wood-400'} />}
+                            </div>
+                            <div className="truncate">
+                              <div className="font-bold text-wood-950 text-xs flex items-center space-x-1.5">
+                                <span>
+                                  {r === 'STUDENT' && 'Student Tenant'}
+                                  {r === 'LANDLORD' && 'Landlord / Hostel Manager'}
+                                  {r === 'INSPECTOR' && 'Certified Physical Inspector'}
+                                </span>
+                                {isSelected && (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-black bg-wood-100 border border-wood-150 text-wood-700 rounded-sm scale-90">
+                                    ACTIVE
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-wood-400 font-normal mt-0.5 whitespace-normal">
                                 {r === 'STUDENT' && 'Discover vetted rooms & protect payment in escrow'}
                                 {r === 'LANDLORD' && 'Publish secure student housing & collect rent'}
                                 {r === 'INSPECTOR' && 'Claim off-campus structural vetting jobs'}
                               </p>
                             </div>
                           </div>
-                          {isSelected && <Check size={16} className="text-wood-600 shrink-0" />}
+                          {isSelected && <Check size={14} className="text-wood-600 shrink-0" />}
                         </button>
                       );
                     })}

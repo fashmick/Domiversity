@@ -82,7 +82,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
                   <li><strong>Physical Vetting Period:</strong> From payment receipt, the student has a maximum grace period of <strong>3 days (72 hours)</strong> to confirm the room matches the advertised listings.</li>
                   <li><strong>Release of Funds:</strong> Escrowed rental funds are disbursed to the Landlord’s bank account only when:
                     <ul className="list-[circle] pl-5 mt-1 space-y-1">
-                      <li>The student checks into the hostel and submits satisfaction confirmation, OR</li>
+                      <li>The student conducts an inspection (within 3 days maximum after payment) and submits satisfaction confirmation, OR</li>
                       <li>A Certified Physical Inspector completes the inspection task showing no defects, and the student approves the report.</li>
                     </ul>
                   </li>

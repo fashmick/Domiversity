@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cinzel:wght@600;700;800&family=Lora:ital,wght@0,500;0,600;0,700;1,500&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -22,12 +22,17 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-brand: "Lora", "Cinzel", Georgia, serif;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: var(--color-wood-50);
   color: var(--color-wood-950);
+}
+
+.font-brand {
+  font-family: var(--font-brand);
 }
 
 .font-display {

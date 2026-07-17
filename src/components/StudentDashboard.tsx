@@ -22,6 +22,7 @@ interface StudentDashboardProps {
   onCloseCohabitantPost: (postId: string) => void;
   onUploadStudentKYC: (idType: string, idNumber: string) => void;
   onUpdateProfile?: (updatedUser: User) => void;
+  initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile';
 }
 
 export default function StudentDashboard({
@@ -41,9 +42,16 @@ export default function StudentDashboard({
   onCreateCohabitantPost,
   onCloseCohabitantPost,
   onUploadStudentKYC,
-  onUpdateProfile
+  onUpdateProfile,
+  initialSubTab
 }: StudentDashboardProps) {
-  const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile'>('search');
+  const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile'>(initialSubTab || 'search');
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -1328,7 +1336,7 @@ export default function StudentDashboard({
                       <Shield className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
                       <div>
                         <h5 className="font-bold">Rent Escrow Security</h5>
-                        <p className="text-[10px] mt-0.5 text-amber-700 leading-normal">Your payment stays locked in our escrow vault. The landlord will not receive a single Naira until you check-in and confirm your satisfaction.</p>
+                        <p className="text-[10px] mt-0.5 text-amber-700 leading-normal">Your payment stays locked in our escrow vault. The landlord will not receive a single Naira until you complete the physical inspection and confirm your satisfaction (maximum of 3 days after payment).</p>
                       </div>
                     </div>
                   </div>

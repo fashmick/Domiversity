@@ -20,6 +20,7 @@ interface InspectorDashboardProps {
     photos: string[];
   }) => void;
   onUpdateProfile?: (updatedUser: PlatformUser) => void;
+  initialSubTab?: 'available' | 'my-jobs' | 'earnings' | 'profile';
 }
 
 export default function InspectorDashboard({
@@ -29,9 +30,16 @@ export default function InspectorDashboard({
   onUploadKYC,
   onAcceptJob,
   onSubmitReport,
-  onUpdateProfile
+  onUpdateProfile,
+  initialSubTab
 }: InspectorDashboardProps) {
-  const [subTab, setSubTab] = useState<'available' | 'my-jobs' | 'earnings' | 'profile'>('available');
+  const [subTab, setSubTab] = useState<'available' | 'my-jobs' | 'earnings' | 'profile'>(initialSubTab || 'available');
+
+  React.useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   const [reportingJobId, setReportingJobId] = useState<string | null>(null);
 
   // Profile settings state

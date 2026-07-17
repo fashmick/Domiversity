@@ -7,9 +7,26 @@ export interface KYCDetails {
   idNumber: string;
   idImage: string;
   proofDoc: string; // ownership document or student ID
+  proofDocImage?: string;
+  businessRegNum?: string;
+  businessRegImage?: string;
+  buildingApprovalNum?: string;
+  buildingApprovalImage?: string;
+  fireSafetyNum?: string;
+  fireSafetyImage?: string;
+  waterAvailability?: string;
+  electricityAvailability?: string;
+  utilityBillImage?: string;
+  hostelMedia?: string[];
+  gpsLocation?: string;
   bankName?: string;
   bankAccount?: string;
   bankAccountName?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  schoolApprovalId?: string;
+  schoolApprovalStatus?: 'Approved' | 'Pending' | 'Not Approved';
   rejectionReason?: string;
 }
 
