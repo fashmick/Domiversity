@@ -207,6 +207,8 @@ export default function StudentDashboard({
   const [newPostBudget, setNewPostBudget] = useState<number>(200000);
   const [newPostDescription, setNewPostDescription] = useState('');
   const [newPostHabits, setNewPostHabits] = useState<string[]>([]);
+  const [newPostGenderPref, setNewPostGenderPref] = useState<'Male' | 'Female' | 'Any'>('Any');
+  const [roommateSearch, setRoommateSearch] = useState('');
 
   // Filtering hostels
   const filteredHostels = hostels.filter(hostel => {
@@ -310,6 +312,7 @@ export default function StudentDashboard({
       schoolId: activeStudent.schoolId,
       budget: newPostBudget,
       gender: activeStudent.kycDetails?.idType ? 'Female' : 'Male', // Mock gender based on profile or fallback
+      genderPreference: newPostGenderPref,
       habits: newPostHabits.length > 0 ? newPostHabits : ['Studious', 'Quiet'],
       description: newPostDescription
     });
@@ -317,6 +320,7 @@ export default function StudentDashboard({
     setShowCreatePostModal(false);
     setNewPostDescription('');
     setNewPostHabits([]);
+    setNewPostGenderPref('Any');
   };
 
   const toggleNewPostHabit = (habit: string) => {
@@ -825,99 +829,153 @@ export default function StudentDashboard({
           </div>
         )}
 
-        {/* 3. ROOMMATE MATCHER SUBTAB */}
-        {subTab === 'roommates' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center border-b border-wood-200 pb-3">
-              <div>
-                <h2 className="font-display font-bold text-xl text-wood-950">Roommate Matching Flyer Space</h2>
-                <p className="text-xs text-wood-500 mt-1">Browse other tertiary students looking to split hostel costs, or create your own post.</p>
-              </div>
-              <button
-                onClick={() => setShowCreatePostModal(true)}
-                className="px-4 py-2.5 bg-wood-600 hover:bg-wood-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1 cursor-pointer"
-              >
-                <Plus size={14} />
-                <span>Publish Post</span>
-              </button>
-            </div>
+        {/* 3. ROOMMATE MATCHER SUBTAB - renamed to Roommate Finder Hub */}
+        {subTab === 'roommates' && (() => {
+          const filteredCohabitants = cohabitants.filter(post => {
+            const term = roommateSearch.toLowerCase().trim();
+            if (!term) return true;
+            
+            const school = schools.find(s => s.id === post.schoolId);
+            const schoolName = school ? school.name.toLowerCase() : '';
+            const name = post.studentName.toLowerCase();
+            const desc = post.description.toLowerCase();
+            const habits = post.habits.map(h => h.toLowerCase()).join(' ');
+            const genderPref = (post.genderPreference || '').toLowerCase();
+            const genderSelf = (post.gender || '').toLowerCase();
 
-            {/* Create Roommate Post Modal Overlay */}
-            {showCreatePostModal && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-                <div className="bg-white rounded-3xl p-6 max-w-lg w-full border border-wood-200 shadow-2xl animate-scaleUp">
-                  <h3 className="font-display font-bold text-lg text-wood-950 mb-1">Create "Roommate Wanted" Post</h3>
-                  <p className="text-xs text-wood-500 mb-4">Post a flyer. We automatically hook it to your institution directory.</p>
+            return name.includes(term) || 
+                   desc.includes(term) || 
+                   schoolName.includes(term) || 
+                   habits.includes(term) ||
+                   genderPref.includes(term) ||
+                   genderSelf.includes(term) ||
+                   post.budget.toString().includes(term);
+          });
 
-                  <form onSubmit={handleCreateRoommatePost} className="space-y-4 text-xs">
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">My Maximum Yearly Budget</label>
-                      <input
-                        type="number"
-                        value={newPostBudget}
-                        onChange={(e) => setNewPostBudget(parseInt(e.target.value))}
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
-                        min="50000"
-                        step="10000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1.5">My Lifestyle/Study Habits</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {['Quiet', 'Studious', 'Non-smoker', 'Early-bird', 'No parties', 'Neat', 'Social'].map(habit => {
-                          const isSelected = newPostHabits.includes(habit);
-                          return (
-                            <button
-                              type="button"
-                              key={habit}
-                              onClick={() => toggleNewPostHabit(habit)}
-                              className={`px-3 py-1.5 rounded-lg border font-semibold cursor-pointer ${
-                                isSelected ? 'bg-wood-600 border-wood-600 text-white' : 'bg-white border-wood-200 text-wood-700 hover:bg-wood-50'
-                              }`}
-                            >
-                              {habit}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">Description (Tell prospective matches about yourself)</label>
-                      <textarea
-                        value={newPostDescription}
-                        onChange={(e) => setNewPostDescription(e.target.value)}
-                        placeholder="E.g., I am in 300 Level CS, I study a lot, very clean, am looking to find someone to rent a self-contain apartment with..."
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl p-3 text-xs outline-hidden focus:ring-1 focus:ring-wood-500"
-                        rows={4}
-                        required
-                      />
-                    </div>
-
-                    <div className="flex justify-end space-x-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowCreatePostModal(false)}
-                        className="px-4 py-2 border border-wood-200 rounded-lg text-wood-700 font-semibold hover:bg-wood-50 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-wood-600 hover:bg-wood-700 text-white font-bold rounded-lg cursor-pointer"
-                      >
-                        Publish Flyer
-                      </button>
-                    </div>
-                  </form>
+          return (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-wood-200 pb-3 gap-4">
+                <div>
+                  <h2 className="font-display font-bold text-xl text-wood-950">Roommate Finder Hub</h2>
+                  <p className="text-xs text-wood-500 mt-1">Browse other tertiary students looking to split hostel costs, or create your own post.</p>
                 </div>
+                <button
+                  onClick={() => setShowCreatePostModal(true)}
+                  className="px-4 py-2.5 bg-wood-600 hover:bg-wood-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center space-x-1 cursor-pointer self-start sm:self-auto shrink-0"
+                >
+                  <Plus size={14} />
+                  <span>Publish Post</span>
+                </button>
               </div>
-            )}
 
-            {/* Roommates Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cohabitants.map(post => {
+              {/* Roommate Search Input */}
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-wood-400">
+                  <Search size={16} />
+                </span>
+                <input
+                  type="text"
+                  value={roommateSearch}
+                  onChange={(e) => setRoommateSearch(e.target.value)}
+                  placeholder="Search roommates by name, school, habits, budget, or gender..."
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-wood-200 rounded-xl text-wood-950 text-xs sm:text-sm focus:border-wood-500 focus:ring-1 focus:ring-wood-500 outline-hidden transition-all placeholder-wood-400 shadow-2xs"
+                />
+              </div>
+
+              {/* Create Roommate Post Modal Overlay */}
+              {showCreatePostModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
+                  <div className="bg-white rounded-3xl p-6 max-w-lg w-full border border-wood-200 shadow-2xl animate-scaleUp max-h-[90vh] overflow-y-auto">
+                    <h3 className="font-display font-bold text-lg text-wood-950 mb-1">Create "Roommate Wanted" Post</h3>
+                    <p className="text-xs text-wood-500 mb-4">Post a flyer. We automatically hook it to your institution directory.</p>
+
+                    <form onSubmit={handleCreateRoommatePost} className="space-y-4 text-xs">
+                      <div>
+                        <label className="block font-bold text-wood-700 mb-1">My Maximum Yearly Budget</label>
+                        <input
+                          type="number"
+                          value={newPostBudget}
+                          onChange={(e) => setNewPostBudget(parseInt(e.target.value))}
+                          className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
+                          min="50000"
+                          step="10000"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-wood-700 mb-1">Preferred Roommate Gender</label>
+                        <CustomSelect
+                          value={newPostGenderPref}
+                          onChange={(val: any) => setNewPostGenderPref(val)}
+                          options={[
+                            { value: 'Any', label: 'Any Gender / No Preference' },
+                            { value: 'Male', label: 'Male Only' },
+                            { value: 'Female', label: 'Female Only' }
+                          ]}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-wood-700 mb-1.5">My Lifestyle/Study Habits</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['Quiet', 'Studious', 'Non-smoker', 'Early-bird', 'No parties', 'Neat', 'Social'].map(habit => {
+                            const isSelected = newPostHabits.includes(habit);
+                            return (
+                              <button
+                                type="button"
+                                key={habit}
+                                onClick={() => toggleNewPostHabit(habit)}
+                                className={`px-3 py-1.5 rounded-lg border font-semibold cursor-pointer ${
+                                  isSelected ? 'bg-wood-600 border-wood-600 text-white' : 'bg-white border-wood-200 text-wood-700 hover:bg-wood-50'
+                                }`}
+                              >
+                                {habit}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-wood-700 mb-1">Description (Tell prospective matches about yourself)</label>
+                        <textarea
+                          value={newPostDescription}
+                          onChange={(e) => setNewPostDescription(e.target.value)}
+                          placeholder="E.g., I am in 300 Level CS, I study a lot, very clean, am looking to find someone to rent a self-contain apartment with..."
+                          className="w-full bg-wood-50 border border-wood-200 rounded-xl p-3 text-xs outline-hidden focus:ring-1 focus:ring-wood-500"
+                          rows={4}
+                          required
+                        />
+                      </div>
+
+                      <div className="flex justify-end space-x-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowCreatePostModal(false)}
+                          className="px-4 py-2 border border-wood-200 rounded-lg text-wood-700 font-semibold hover:bg-wood-50 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-wood-600 hover:bg-wood-700 text-white font-bold rounded-lg cursor-pointer"
+                        >
+                          Publish Flyer
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Roommates Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredCohabitants.length === 0 ? (
+                  <div className="col-span-full bg-white border border-wood-200 rounded-2xl p-8 text-center text-wood-500">
+                    No matching roommate posts found. Try another search query or publish a new post!
+                  </div>
+                ) : (
+                  filteredCohabitants.map(post => {
                 const school = schools.find(s => s.id === post.schoolId);
                 const isMe = post.studentId === activeStudent.id;
                 
@@ -947,6 +1005,22 @@ export default function StudentDashboard({
                       <div className="mb-4">
                         <span className="text-[10px] font-bold text-wood-400 uppercase tracking-wider">Split Budget Preference</span>
                         <p className="font-bold text-emerald-700 text-base leading-none mt-0.5">Up to {formatNaira(post.budget)} / yr</p>
+                      </div>
+
+                      {/* Gender and Preference */}
+                      <div className="flex justify-between items-center bg-wood-50 rounded-xl p-2.5 mb-4 text-xs border border-wood-100">
+                        <div>
+                          <span className="block text-[9px] font-bold text-wood-400 uppercase tracking-wider">My Gender</span>
+                          <span className="font-bold text-wood-700">{post.gender}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[9px] font-bold text-wood-400 uppercase tracking-wider">Roommate Wanted</span>
+                          <span className="font-bold text-wood-900">
+                            {post.genderPreference === 'Male' && '🙋‍♂️ Male Only'}
+                            {post.genderPreference === 'Female' && '🙋‍♀️ Female Only'}
+                            {(!post.genderPreference || post.genderPreference === 'Any') && '👥 Any Gender'}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Description */}
@@ -988,7 +1062,8 @@ export default function StudentDashboard({
               })}
             </div>
           </div>
-        )}
+        );
+      })()}
 
         {/* 4. BOOKMARKS SUBTAB */}
         {subTab === 'bookmarks' && (
@@ -1203,81 +1278,7 @@ export default function StudentDashboard({
               </div>
             </div>
 
-            {/* IDENTITY VERIFICATION CARD */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-wood-200/80 shadow-xs">
-              <h2 className="font-display font-bold text-xl text-wood-950 mb-1">Verify Student Identity Card</h2>
-              <p className="text-xs text-wood-500 mb-6">Verified students receive an "ID Verified Badge" on roommate finder lists, improving matches.</p>
 
-              {activeStudent.kycStatus === 'APPROVED' ? (
-                <div className="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl flex items-start space-x-3 text-emerald-800">
-                  <CheckCircle2 size={24} className="text-emerald-600 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-bold text-base flex items-center space-x-1.5">
-                      <span>Verification Approved!</span>
-                      <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">VERIFIED</span>
-                    </h4>
-                    <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-                      Your identity credentials ({activeStudent.kycDetails?.idType}) have been reviewed and approved by Dormiversity Administration. Your roommate flyer is marked with a checkmark badge.
-                    </p>
-                  </div>
-                </div>
-              ) : activeStudent.kycStatus === 'PENDING' ? (
-                <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex items-start space-x-3 text-amber-800">
-                  <Clock size={24} className="text-amber-600 flex-shrink-0 animate-pulse" />
-                  <div>
-                    <h4 className="font-bold text-base">KYC Review Pending</h4>
-                    <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                      You have uploaded your student details. Our System Administrators are auditing the NIN slip/School registration document. Review time is typically less than an hour in this Demo.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleKycSubmit} className="space-y-4 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">Card Document Type</label>
-                      <CustomSelect
-                        value={kycIdType}
-                        onChange={(val) => setKycIdType(val)}
-                        options={[
-                          { value: 'Student ID Card', label: 'Student Registration ID Card' },
-                          { value: 'National Identity Number (NIN)', label: 'NIN Slip Card' },
-                          { value: 'Voter\'s Card', label: 'Permanent Voter\'s Card (PVC)' }
-                        ]}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">ID Registration Number</label>
-                      <input
-                        type="text"
-                        value={kycIdNumber}
-                        onChange={(e) => setKycIdNumber(e.target.value)}
-                        placeholder="E.g., CSS/2023/048 or 100984725384"
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-wood-700 mb-1">Upload Photo (Drag-and-drop simulated)</label>
-                    <div className="border border-dashed border-wood-300 rounded-2xl bg-wood-50/50 p-6 text-center">
-                      <FileText size={28} className="text-wood-400 mx-auto mb-2" />
-                      <p className="font-bold text-wood-950">Click or Drag your ID photo file here</p>
-                      <p className="text-[10px] text-wood-500 mt-0.5">Supports PDF, JPG, PNG up to 5MB</p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-wood-600 hover:bg-wood-700 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer"
-                  >
-                    Submit KYC for Audit
-                  </button>
-                </form>
-              )}
-            </div>
           </div>
         )}
 

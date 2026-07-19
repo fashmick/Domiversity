@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings } from 'lucide-react';
+import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings, Compass, Users, Bookmark } from 'lucide-react';
 import { User, UserRole } from '../types';
 import DormiversityLogo from './DormiversityLogo';
 
@@ -40,32 +40,53 @@ export default function Navigation({
             {/* Desktop Navigation Links */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-1.5 items-center">
               {currentRole === 'STUDENT' && (
-                <>
+                <div className="relative">
                   <button
-                    onClick={() => onNavigate('dashboard')}
-                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                    onClick={() => setStudentMenuOpen(!studentMenuOpen)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 whitespace-nowrap bg-wood-100 hover:bg-wood-200/85 text-wood-950 border border-wood-200 cursor-pointer"
                   >
-                    Hostels Search
+                    <span>Student Dashboard Menu</span>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${studentMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <button
-                    onClick={() => onNavigate('roommates')}
-                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'roommates' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                  >
-                    Roommate Matcher
-                  </button>
-                  <button
-                    onClick={() => onNavigate('bookings')}
-                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                  >
-                    My Bookings
-                  </button>
-                  <button
-                    onClick={() => onNavigate('bookmarks')}
-                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'bookmarks' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                  >
-                    My Bookmarks
-                  </button>
-                </>
+
+                  {studentMenuOpen && (
+                    <>
+                      {/* Backdrop overlay to close when clicking outside */}
+                      <div className="fixed inset-0 z-40" onClick={() => setStudentMenuOpen(false)} />
+                      
+                      <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl border border-wood-200 shadow-xl py-1.5 z-50 animate-scaleUp">
+                        <button
+                          onClick={() => { onNavigate('dashboard'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'dashboard' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                        >
+                          <Compass size={14} className="text-wood-500" />
+                          <span>Hostels Search</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('roommates'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'roommates' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                        >
+                          <Users size={14} className="text-wood-500" />
+                          <span>Roommate Finder</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('bookings'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'bookings' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                        >
+                          <Settings size={14} className="text-wood-500" />
+                          <span>My Bookings</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('bookmarks'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'bookmarks' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                        >
+                          <Bookmark size={14} className="text-wood-500" />
+                          <span>My Bookmarks</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {currentRole === 'LANDLORD' && (
@@ -202,7 +223,7 @@ export default function Navigation({
                 onClick={() => { onNavigate('roommates'); setMobileMenuOpen(false); }}
                 className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'roommates' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
               >
-                Roommate Matcher
+                Roommate Finder
               </button>
               <button
                 onClick={() => { onNavigate('bookings'); setMobileMenuOpen(false); }}

@@ -880,11 +880,11 @@ export default function App() {
   const handleNavigateToChat = (otherId: string, hostelId?: string, bookingId?: string) => {
     const otherUser = state.users.find(u => u.id === otherId)!;
     
-    // Find or create a thread
+    // Find or create a thread in a direction-independent manner to prevent duplication
     let existingThread = state.chats.find(c => 
-      c.studentId === (activeUser.role === 'STUDENT' ? activeUser.id : otherId) &&
-      c.otherId === (activeUser.role === 'STUDENT' ? otherId : activeUser.id) &&
-      (hostelId ? c.hostelId === hostelId : true)
+      ((c.studentId === activeUser.id && c.otherId === otherId) ||
+       (c.studentId === otherId && c.otherId === activeUser.id)) &&
+      (!hostelId || c.hostelId === hostelId)
     );
     
     if (!existingThread) {

@@ -36,9 +36,9 @@ export default function ChatInbox({
   const [blockedAlert, setBlockedAlert] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Filter threads that belong to the active student or active other roles
+  // Filter threads that belong to the active user (either as the initiator studentId or the otherId)
   const userThreads = threads.filter(thread => 
-    activeUser.role === 'STUDENT' ? thread.studentId === activeUser.id : thread.otherId === activeUser.id
+    thread.studentId === activeUser.id || thread.otherId === activeUser.id
   );
 
   const activeThread = userThreads.find(t => t.id === selectedThreadId) || null;

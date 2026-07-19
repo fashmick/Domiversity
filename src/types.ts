@@ -139,6 +139,7 @@ export interface CohabitantPost {
   schoolId: string;
   budget: number; // max yearly rent they can pay
   gender: 'Male' | 'Female';
+  genderPreference?: 'Male' | 'Female' | 'Any';
   habits: string[]; // e.g. ['Studious', 'Quiet', 'Non-smoker', 'Early-bird', 'No parties']
   description: string;
   createdAt: string;
