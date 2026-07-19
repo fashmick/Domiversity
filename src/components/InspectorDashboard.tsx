@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardCheck, ShieldAlert, CheckCircle2, Clock, MapPin, Clipboard, DollarSign, PenTool, Check, FileText, User } from 'lucide-react';
+import { ClipboardCheck, ShieldAlert, CheckCircle2, Clock, MapPin, Clipboard, DollarSign, PenTool, Check, FileText, User, AlertCircle } from 'lucide-react';
 import { InspectorJob, User as PlatformUser, School } from '../types';
 import { formatNaira, formatDate } from '../utils';
 import CustomSelect from './CustomSelect';
@@ -21,6 +21,7 @@ interface InspectorDashboardProps {
     photos: string[];
   }) => void;
   onUpdateProfile?: (updatedUser: PlatformUser) => void;
+  onDeleteAccount?: (userId: string) => void;
   initialSubTab?: 'available' | 'my-jobs' | 'earnings' | 'profile';
 }
 
@@ -32,6 +33,7 @@ export default function InspectorDashboard({
   onAcceptJob,
   onSubmitReport,
   onUpdateProfile,
+  onDeleteAccount,
   initialSubTab
 }: InspectorDashboardProps) {
   const [subTab, setSubTab] = useState<'available' | 'my-jobs' | 'earnings' | 'profile'>(initialSubTab || 'available');
@@ -602,12 +604,13 @@ export default function InspectorDashboard({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-wood-700 mb-1">Email Address (Read-only)</label>
+                      <label className="block font-bold text-wood-700 mb-1">Email Address</label>
                       <input
                         type="email"
-                        disabled
+                        required
                         value={profileEmail}
-                        className="w-full bg-wood-100 border border-wood-200 rounded-xl px-3 py-2 text-sm text-wood-500 cursor-not-allowed outline-hidden"
+                        onChange={(e) => setProfileEmail(e.target.value)}
+                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                       />
                     </div>
                   </div>
@@ -620,6 +623,36 @@ export default function InspectorDashboard({
                       onChange={(e) => setProfilePic(e.target.value)}
                       className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                     />
+                  </div>
+
+                  {/* Profile Picture Uploader Row */}
+                  <div className="bg-wood-50/50 p-4 rounded-2xl border border-wood-100 flex flex-col sm:flex-row items-center gap-4 text-left">
+                    <img 
+                      src={profilePic || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"} 
+                      alt="Profile Avatar" 
+                      className="w-14 h-14 rounded-full object-cover border-2 border-wood-300 shadow-xs flex-shrink-0" 
+                    />
+                    <div className="flex-1 w-full space-y-1.5">
+                      <label className="block font-bold text-wood-700">Upload Another Profile Picture</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target?.result) {
+                                setProfilePic(event.target.result as string);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full text-xs text-wood-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-wood-800 file:text-white hover:file:bg-wood-950 file:cursor-pointer"
+                      />
+                      <p className="text-[10px] text-wood-400 font-semibold">Supports JPG, PNG formats. Converts to Base64 automatically.</p>
+                    </div>
                   </div>
 
                   <div className="bg-wood-50 p-4 rounded-xl border border-wood-150 text-[11px] text-wood-600 leading-normal space-y-1">
@@ -647,6 +680,35 @@ export default function InspectorDashboard({
                     </button>
                   </div>
                 </form>
+
+                {/* DANGER ZONE: DELETE ACCOUNT */}
+                <div className="mt-8 bg-red-50/50 p-6 sm:p-8 rounded-3xl border border-red-200 shadow-xs text-left space-y-4">
+                  <div className="flex items-start space-x-3 text-red-800">
+                    <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-display font-bold text-base text-red-950">Danger Zone</h3>
+                      <p className="text-xs text-red-700 mt-0.5 leading-normal">
+                        Deleting your account is permanent. This will erase all your assigned inspections, vetting histories, and profile details from our database immediately.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Are you absolutely sure you want to permanently delete your Inspector account? This action is completely irreversible.")) {
+                          if (onDeleteAccount) {
+                            onDeleteAccount(activeInspector.id);
+                          }
+                        }
+                      }}
+                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer text-xs uppercase tracking-wider"
+                    >
+                      Permanently Delete My Account
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

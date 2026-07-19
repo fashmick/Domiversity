@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut } from 'lucide-react';
+import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings } from 'lucide-react';
 import { User, UserRole } from '../types';
 import DormiversityLogo from './DormiversityLogo';
 
@@ -38,55 +38,47 @@ export default function Navigation({
             </div>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-4 items-center">
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-1.5 items-center">
               {currentRole === 'STUDENT' && (
-                <div className="relative">
+                <>
                   <button
-                    onClick={() => setStudentMenuOpen(!studentMenuOpen)}
-                    className="px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 bg-wood-50/80 border border-wood-200 hover:border-wood-400 text-wood-950 cursor-pointer shadow-2xs"
+                    onClick={() => onNavigate('dashboard')}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
                   >
-                    <span>Student Services</span>
-                    <ChevronDown size={14} className={`text-wood-500 transition-transform ${studentMenuOpen ? 'rotate-180' : ''}`} />
+                    Hostels Search
                   </button>
-                  {studentMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setStudentMenuOpen(false)}></div>
-                      <div className="absolute left-0 mt-2 w-52 bg-white border border-wood-200 rounded-2xl shadow-xl py-2 z-20 divide-y divide-wood-50/60 animate-fadeIn">
-                        <button
-                          onClick={() => { onNavigate('dashboard'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'dashboard' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
-                        >
-                          <span>🔍</span> <span>Hostels Search</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('roommates'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'roommates' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
-                        >
-                          <span>👥</span> <span>Roommate Matcher</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('bookings'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'bookings' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
-                        >
-                          <span>📅</span> <span>My Bookings</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                  <button
+                    onClick={() => onNavigate('roommates')}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'roommates' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                  >
+                    Roommate Matcher
+                  </button>
+                  <button
+                    onClick={() => onNavigate('bookings')}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                  >
+                    My Bookings
+                  </button>
+                  <button
+                    onClick={() => onNavigate('bookmarks')}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'bookmarks' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                  >
+                    My Bookmarks
+                  </button>
+                </>
               )}
 
               {currentRole === 'LANDLORD' && (
                 <>
                   <button
                     onClick={() => onNavigate('dashboard')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
                   >
                     Manage Listings
                   </button>
                   <button
                     onClick={() => onNavigate('bookings')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
                   >
                     Rent Escrows
                   </button>
@@ -97,7 +89,7 @@ export default function Navigation({
                 <>
                   <button
                     onClick={() => onNavigate('dashboard')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
                   >
                     Inspection Jobs
                   </button>
@@ -108,25 +100,34 @@ export default function Navigation({
                 <>
                   <button
                     onClick={() => onNavigate('dashboard')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                    className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
                   >
                     Admin Controls
                   </button>
                 </>
               )}
 
-              {/* Secure Chat Link */}
+              {/* Secure Chat Link as Message Page */}
               <button
                 onClick={() => onNavigate('chat')}
-                className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${activeTab === 'chat' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                className={`relative px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'chat' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
               >
-                <MessageSquare size={16} />
-                <span>Secure Inbox</span>
+                <MessageSquare size={14} />
+                <span>Message Page</span>
                 {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                     {unreadMessagesCount}
                   </span>
                 )}
+              </button>
+
+              {/* Settings Link */}
+              <button
+                onClick={() => onNavigate('profile')}
+                className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'profile' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+              >
+                <Settings size={14} />
+                <span>Settings Page</span>
               </button>
             </div>
           </div>
@@ -209,6 +210,12 @@ export default function Navigation({
               >
                 My Bookings
               </button>
+              <button
+                onClick={() => { onNavigate('bookmarks'); setMobileMenuOpen(false); }}
+                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'bookmarks' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
+              >
+                My Bookmarks
+              </button>
             </>
           )}
 
@@ -251,7 +258,14 @@ export default function Navigation({
             onClick={() => { onNavigate('chat'); setMobileMenuOpen(false); }}
             className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'chat' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
           >
-            Secure Inbox
+            Message Page
+          </button>
+
+          <button
+            onClick={() => { onNavigate('profile'); setMobileMenuOpen(false); }}
+            className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'profile' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
+          >
+            Settings Page
           </button>
         </div>
       )}

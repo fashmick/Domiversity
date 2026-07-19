@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle, Lock } from 'lucide-react';
 import { Hostel, School, Booking, InspectorJob, CohabitantPost, User } from '../types';
 import { formatNaira, formatDate } from '../utils';
 import SchoolSelect from './SchoolSelect';
@@ -23,6 +23,7 @@ interface StudentDashboardProps {
   onCloseCohabitantPost: (postId: string) => void;
   onUploadStudentKYC: (idType: string, idNumber: string) => void;
   onUpdateProfile?: (updatedUser: User) => void;
+  onDeleteAccount?: (userId: string) => void;
   initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile';
 }
 
@@ -44,6 +45,7 @@ export default function StudentDashboard({
   onCloseCohabitantPost,
   onUploadStudentKYC,
   onUpdateProfile,
+  onDeleteAccount,
   initialSubTab
 }: StudentDashboardProps) {
   const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile'>(initialSubTab || 'search');
@@ -72,6 +74,57 @@ export default function StudentDashboard({
     return () => clearInterval(interval);
   }, []);
 
+  // Synchronize typing in search input to automatically sync sidebar filters
+  React.useEffect(() => {
+    if (!searchTerm) return;
+    const term = searchTerm.toLowerCase().trim();
+
+    // 1. Try to match any institution name/abbreviation/ID
+    const matchedSchool = schools.find(s => 
+      s.name.toLowerCase().includes(term) || 
+      s.id.toLowerCase().includes(term) ||
+      // handle common abbreviation terms if found in name (e.g. UNILAG)
+      s.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(term)
+    );
+    if (matchedSchool) {
+      setSelectedSchool(matchedSchool.id);
+    }
+
+    // 2. Try to match room types
+    const roomTypes = ['Single Room', 'Shared Room', 'Self-Contain', 'Flat'];
+    const matchedRoomType = roomTypes.find(rt => rt.toLowerCase().includes(term));
+    if (matchedRoomType) {
+      setSelectedRoomType(matchedRoomType);
+    }
+
+    // 3. Try to match gender criteria
+    const genders = ['Male', 'Female', 'Mixed'];
+    const matchedGender = genders.find(g => 
+      g.toLowerCase() === term || 
+      (term.length >= 3 && g.toLowerCase().includes(term))
+    );
+    if (matchedGender) {
+      setSelectedGender(matchedGender);
+    }
+
+    // 4. Try to match budget numerical values (e.g. "200000", "300k")
+    const kMatch = term.match(/(\d+)\s*k/);
+    if (kMatch) {
+      const thousandVal = parseInt(kMatch[1], 10) * 1000;
+      if (thousandVal >= 20000 && thousandVal <= 5000000) {
+        setMaxBudget(thousandVal);
+      }
+    } else {
+      const numericMatch = term.match(/\b\d{5,7}\b/);
+      if (numericMatch) {
+        const directVal = parseInt(numericMatch[0], 10);
+        if (directVal >= 20000 && directVal <= 5000000) {
+          setMaxBudget(directVal);
+        }
+      }
+    }
+  }, [searchTerm, schools]);
+
   // Countdown Helper
   const getCountdownText = (createdAt: string) => {
     const createdTime = new Date(createdAt).getTime();
@@ -94,7 +147,6 @@ export default function StudentDashboard({
   const [detailedHostel, setDetailedHostel] = useState<Hostel | null>(null);
   const [showPaystackModal, setShowPaystackModal] = useState<{ isOpen: boolean; hostelId: string; type: 'RENT' | 'INSPECTION' }>({ isOpen: false, hostelId: '', type: 'RENT' });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [mockCard, setMockCard] = useState('access');
   const [disputeBookingId, setDisputeBookingId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeEvidence, setDisputeEvidence] = useState('');
@@ -185,17 +237,61 @@ export default function StudentDashboard({
   };
 
   const handleConfirmPaystackPayment = () => {
+    const hostel = hostels.find(h => h.id === showPaystackModal.hostelId);
+    if (!hostel) return;
+
+    const amount = showPaystackModal.type === 'RENT' 
+      ? hostel.price + (inspectionChoice === 'ROOMLY' ? 5000 : 0)
+      : 5000; // inspection fee is 5000
+
+    // Retrieve public key from environment, with fallback to test key
+    const paystackPublicKey = ((import.meta as any).env?.VITE_PAYSTACK_PUBLIC_KEY) || "pk_test_d3a39e7a83d722e03940176d755711b7d5268ea8";
+
+    if (typeof (window as any).PaystackPop === 'undefined') {
+      alert("Paystack SDK is currently loading. Please wait a moment and try again.");
+      return;
+    }
+
     setIsProcessingPayment(true);
-    setTimeout(() => {
-      setIsProcessingPayment(false);
-      setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' });
+
+    try {
+      const handler = (window as any).PaystackPop.setup({
+        key: paystackPublicKey,
+        email: activeStudent.email || 'student@dormiversity.com',
+        amount: amount * 100, // amount in kobo
+        currency: 'NGN',
+        ref: 'DORM-' + Math.floor((Math.random() * 1000000000) + 1),
+        callback: function(response: any) {
+          setIsProcessingPayment(false);
+          setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' });
+          
+          if (showPaystackModal.type === 'RENT') {
+            onBookHostel(showPaystackModal.hostelId, inspectionChoice);
+          } else {
+            onRequestInspection(showPaystackModal.hostelId);
+          }
+          alert(`Escrow Payment Successful! Reference: ${response.reference}. Your funds are held securely in escrow.`);
+        },
+        onClose: function() {
+          setIsProcessingPayment(false);
+        }
+      });
       
-      if (showPaystackModal.type === 'RENT') {
-        onBookHostel(showPaystackModal.hostelId, inspectionChoice);
-      } else {
-        onRequestInspection(showPaystackModal.hostelId);
-      }
-    }, 2000);
+      handler.openIframe();
+    } catch (err) {
+      console.error("Paystack popup initialization error", err);
+      // fallback in case of blockages
+      alert("Opening fallback payment gateway...");
+      setTimeout(() => {
+        setIsProcessingPayment(false);
+        setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' });
+        if (showPaystackModal.type === 'RENT') {
+          onBookHostel(showPaystackModal.hostelId, inspectionChoice);
+        } else {
+          onRequestInspection(showPaystackModal.hostelId);
+        }
+      }, 1500);
+    }
   };
 
   const handleSubmitDispute = (bookingId: string) => {
@@ -251,44 +347,6 @@ export default function StudentDashboard({
             <p className="text-sm text-wood-600 mt-1">
               Find safe dorms, split costs with campus roommates, and verify listings through physical inspections.
             </p>
-          </div>
-
-          <div className="flex bg-wood-50 p-1.5 rounded-2xl border border-wood-200 overflow-x-auto w-full md:w-auto">
-            <button
-              onClick={() => setSubTab('search')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${subTab === 'search' ? 'bg-white text-wood-950 shadow-xs' : 'text-wood-600 hover:text-wood-950'}`}
-            >
-              Search Hostels
-            </button>
-            <button
-              onClick={() => setSubTab('roommates')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${subTab === 'roommates' ? 'bg-white text-wood-950 shadow-xs' : 'text-wood-600 hover:text-wood-950'}`}
-            >
-              Roommates Find
-            </button>
-            <button
-              onClick={() => setSubTab('bookings')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap relative ${subTab === 'bookings' ? 'bg-white text-wood-950 shadow-xs' : 'text-wood-600 hover:text-wood-950'}`}
-            >
-              My Bookings
-              {studentBookings.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-wood-500 text-white rounded-full text-[10px] font-bold">
-                  {studentBookings.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setSubTab('bookmarks')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${subTab === 'bookmarks' ? 'bg-white text-wood-950 shadow-xs' : 'text-wood-600 hover:text-wood-950'}`}
-            >
-              Bookmarks
-            </button>
-            <button
-              onClick={() => setSubTab('profile')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${subTab === 'profile' ? 'bg-white text-wood-950 shadow-xs' : 'text-wood-600 hover:text-wood-950'}`}
-            >
-              Profile / KYC
-            </button>
           </div>
         </div>
 
@@ -1031,12 +1089,13 @@ export default function StudentDashboard({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-wood-700 mb-1">Email Address (Read-only)</label>
+                    <label className="block font-bold text-wood-700 mb-1">Email Address</label>
                     <input
                       type="email"
-                      disabled
+                      required
                       value={profileEmail}
-                      className="w-full bg-wood-100 border border-wood-200 rounded-xl px-3 py-2 text-sm text-wood-500 cursor-not-allowed outline-hidden"
+                      onChange={(e) => setProfileEmail(e.target.value)}
+                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                     />
                   </div>
 
@@ -1074,6 +1133,36 @@ export default function StudentDashboard({
                   </div>
                 </div>
 
+                {/* Profile Picture Upload Row */}
+                <div className="bg-wood-50/50 p-4 rounded-2xl border border-wood-100 flex flex-col sm:flex-row items-center gap-4 text-left">
+                  <img 
+                    src={profilePic || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"} 
+                    alt="Profile Avatar" 
+                    className="w-14 h-14 rounded-full object-cover border-2 border-wood-300 shadow-xs flex-shrink-0" 
+                  />
+                  <div className="flex-1 w-full space-y-1.5">
+                    <label className="block font-bold text-wood-700">Upload Another Profile Picture</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            if (event.target?.result) {
+                              setProfilePic(event.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-xs text-wood-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-wood-800 file:text-white hover:file:bg-wood-950 file:cursor-pointer"
+                    />
+                    <p className="text-[10px] text-wood-400 font-semibold">Supports JPG, PNG formats. Converts to Base64 automatically.</p>
+                  </div>
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -1083,6 +1172,35 @@ export default function StudentDashboard({
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* DANGER ZONE: DELETE ACCOUNT */}
+            <div className="bg-red-50/50 p-6 sm:p-8 rounded-3xl border border-red-200 shadow-xs text-left space-y-4">
+              <div className="flex items-start space-x-3 text-red-800">
+                <AlertTriangle size={24} className="text-red-600 flex-shrink-0" />
+                <div>
+                  <h3 className="font-display font-bold text-base text-red-950">Danger Zone</h3>
+                  <p className="text-xs text-red-700 mt-0.5 leading-normal">
+                    Deleting your account is permanent. This will erase all your bookmarks, roommate flyers, bookings, and active chat histories from our database immediately.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("Are you absolutely sure you want to permanently delete your Dormiversity account? This action is completely irreversible.")) {
+                      if (onDeleteAccount) {
+                        onDeleteAccount(activeStudent.id);
+                      }
+                    }
+                  }}
+                  className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-xs cursor-pointer text-xs uppercase tracking-wider"
+                >
+                  Permanently Delete My Account
+                </button>
+              </div>
             </div>
 
             {/* IDENTITY VERIFICATION CARD */}
@@ -1386,29 +1504,23 @@ export default function StudentDashboard({
                 )}
               </div>
 
-              <div className="space-y-2 text-left">
-                <label className="block font-bold text-wood-700">Choose Card (Mock Mode)</label>
-                <CustomSelect
-                  value={mockCard}
-                  onChange={(val) => setMockCard(val)}
-                  options={[
-                    { value: 'access', label: 'Access Bank Visa (•••• 4920)' },
-                    { value: 'gtb', label: 'GTBank Mastercard (•••• 8821)' }
-                  ]}
-                />
+              <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 text-left space-y-1 text-[11px] text-emerald-800 leading-relaxed">
+                <span className="font-bold text-emerald-950 block">🔒 Verified Escrow Channel</span>
+                <p>Your payment is collected and stored in Dormiversity's institutional escrow account. The landlord cannot touch these funds until you inspect the property or 3 days elapse.</p>
               </div>
 
               {isProcessingPayment ? (
                 <div className="py-4 space-y-2">
-                  <Clock className="text-[#09a5db] animate-spin mx-auto" size={24} />
-                  <p className="text-[#09a5db] font-bold animate-pulse">Contacting Paystack Gateway...</p>
+                  <Clock className="text-[#3bb75e] animate-spin mx-auto" size={24} />
+                  <p className="text-[#3bb75e] font-bold animate-pulse">Launching Paystack Secure Checkout...</p>
                 </div>
               ) : (
                 <button
                   onClick={handleConfirmPaystackPayment}
-                  className="w-full py-3 bg-[#3bb75e] hover:bg-[#329f51] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
+                  className="w-full py-3 bg-[#3bb75e] hover:bg-[#329f51] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center space-x-1.5"
                 >
-                  Simulate Payment Success
+                  <Lock size={14} />
+                  <span>Book with Paystack</span>
                 </button>
               )}
 

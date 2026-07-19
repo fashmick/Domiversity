@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Shield, AlertTriangle, MessageSquare, Info, UserCheck, ShieldCheck } from 'lucide-react';
+import { Send, Shield, AlertTriangle, MessageSquare, Info, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { ChatThread, Message, User } from '../types';
 import { formatDate } from '../utils';
 import { checkMessageContactSharing } from '../state';
@@ -9,10 +9,29 @@ interface ChatInboxProps {
   threads: ChatThread[];
   messages: Message[];
   onSendMessage: (threadId: string, text: string) => { success: boolean; error?: string };
+  selectedThreadId?: string | null;
+  onSelectThread?: (threadId: string | null) => void;
 }
 
-export default function ChatInbox({ activeUser, threads, messages, onSendMessage }: ChatInboxProps) {
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(threads[0]?.id || null);
+export default function ChatInbox({
+  activeUser,
+  threads,
+  messages,
+  onSendMessage,
+  selectedThreadId: propSelectedThreadId,
+  onSelectThread: propOnSelectThread
+}: ChatInboxProps) {
+  const [internalSelectedThreadId, setInternalSelectedThreadId] = useState<string | null>(threads[0]?.id || null);
+
+  const selectedThreadId = propSelectedThreadId !== undefined ? propSelectedThreadId : internalSelectedThreadId;
+  const setSelectedThreadId = (id: string | null) => {
+    if (propOnSelectThread) {
+      propOnSelectThread(id);
+    } else {
+      setInternalSelectedThreadId(id);
+    }
+  };
+
   const [inputText, setInputText] = useState('');
   const [blockedAlert, setBlockedAlert] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -22,14 +41,8 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
     activeUser.role === 'STUDENT' ? thread.studentId === activeUser.id : thread.otherId === activeUser.id
   );
 
-  const activeThread = userThreads.find(t => t.id === selectedThreadId) || userThreads[0] || null;
+  const activeThread = userThreads.find(t => t.id === selectedThreadId) || null;
   const activeThreadMessages = activeThread ? messages.filter(m => m.threadId === activeThread.id) : [];
-
-  useEffect(() => {
-    if (activeThread && !selectedThreadId) {
-      setSelectedThreadId(activeThread.id);
-    }
-  }, [activeThread, selectedThreadId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -45,7 +58,7 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
 
     if (filterResult.isBlocked) {
       setBlockedAlert(filterResult.reason || 'Message blocked.');
-      // Auto-clear alert after 6 seconds
+      // Auto-clear alert after 7 seconds
       setTimeout(() => {
         setBlockedAlert(null);
       }, 7000);
@@ -59,10 +72,12 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-10rem)]">
-      <div className="bg-white border border-wood-200 rounded-3xl overflow-hidden shadow-xs h-full flex flex-col md:flex-row">
-        {/* Threads List (Left Pane) */}
-        <div className="w-full md:w-80 border-r border-wood-200 flex flex-col h-1/3 md:h-full bg-wood-50/20">
+    <div className="w-full bg-wood-50/40 h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Threads List Pane */}
+        <div className={`w-full md:w-85 border-r border-wood-200 flex flex-col h-full bg-white flex-shrink-0 ${
+          selectedThreadId && activeThread ? 'hidden md:flex' : 'flex'
+        }`}>
           <div className="p-4 border-b border-wood-200 bg-white">
             <h2 className="font-display font-bold text-lg text-wood-950 flex items-center space-x-2">
               <MessageSquare size={18} className="text-wood-600" />
@@ -77,8 +92,10 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
           <div className="flex-1 overflow-y-auto divide-y divide-wood-100">
             {userThreads.length === 0 ? (
               <div className="p-8 text-center text-wood-400">
-                <p className="text-sm">No active chats yet.</p>
-                <p className="text-xs mt-1">Chat will unlock when you initiate a hostel booking, inspection, or roommate inquiry.</p>
+                <p className="text-sm font-semibold">No active chats yet.</p>
+                <p className="text-xs mt-1.5 leading-relaxed">
+                  Chat will unlock when you initiate a hostel booking, inspection request, or roommate inquiry.
+                </p>
               </div>
             ) : (
               userThreads.map(thread => {
@@ -90,9 +107,11 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
                       setSelectedThreadId(thread.id);
                       setBlockedAlert(null);
                     }}
-                    className={`w-full text-left p-4 hover:bg-wood-100/50 transition-all flex items-start space-x-3 cursor-pointer ${isSelected ? 'bg-wood-100 font-medium' : ''}`}
+                    className={`w-full text-left p-4 hover:bg-wood-50 transition-all flex items-start space-x-3 cursor-pointer ${
+                      isSelected ? 'bg-wood-100/70 font-medium border-l-4 border-wood-600' : ''
+                    }`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-wood-200 font-bold text-wood-700 flex items-center justify-center border border-wood-200 flex-shrink-0 text-sm">
+                    <div className="w-10 h-10 rounded-full bg-wood-200 font-bold text-wood-700 flex items-center justify-center border border-wood-200/50 flex-shrink-0 text-sm">
                       {thread.otherName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -101,10 +120,10 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
                           {activeUser.role === 'STUDENT' ? thread.otherName : 'Student: ' + thread.otherName}
                         </h4>
                       </div>
-                      <p className="text-xs text-wood-400 font-semibold uppercase tracking-wider mt-0.5">
+                      <p className="text-[10px] text-wood-400 font-bold uppercase tracking-wider mt-0.5 truncate">
                         {thread.hostelName ? thread.hostelName : 'Roommate Inquiry'}
                       </p>
-                      <p className="text-xs text-wood-600 truncate mt-1">{thread.lastMessageText}</p>
+                      <p className="text-xs text-wood-600 truncate mt-1.5">{thread.lastMessageText}</p>
                     </div>
                   </button>
                 );
@@ -113,19 +132,30 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
           </div>
         </div>
 
-        {/* Conversation View (Right Pane) */}
-        <div className="flex-1 flex flex-col h-2/3 md:h-full bg-white relative">
+        {/* Conversation View Pane */}
+        <div className={`flex-1 flex flex-col h-full bg-white relative ${
+          !selectedThreadId || !activeThread ? 'hidden md:flex' : 'flex'
+        }`}>
           {activeThread ? (
             <>
               {/* Thread Header */}
-              <div className="p-4 border-b border-wood-200 bg-white flex items-center justify-between shadow-xs">
+              <div className="p-4 border-b border-wood-200 bg-white flex items-center justify-between shadow-2xs">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-wood-500 text-white font-bold flex items-center justify-center text-sm">
+                  {/* Mobile Back Button */}
+                  <button
+                    onClick={() => setSelectedThreadId(null)}
+                    className="md:hidden p-2 -ml-1 hover:bg-wood-100 rounded-xl text-wood-600 transition-colors cursor-pointer"
+                    title="Back to Chats List"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+
+                  <div className="w-10 h-10 rounded-full bg-wood-600 text-white font-bold flex items-center justify-center text-sm">
                     {activeThread.otherName.charAt(0)}
                   </div>
                   <div>
                     <h3 className="font-bold text-wood-950 text-sm leading-snug">
-                      {activeUser.role === 'STUDENT' ? activeThread.otherName : activeThread.otherName}
+                      {activeThread.otherName}
                     </h3>
                     <div className="flex items-center space-x-1.5 text-xs text-wood-500 font-medium mt-0.5">
                       <span className="px-1.5 py-0.5 bg-wood-100 rounded text-[10px] font-semibold text-wood-700 uppercase">
@@ -143,9 +173,9 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
                   </div>
                 </div>
 
-                <div className="hidden sm:flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full font-medium">
-                  <ShieldCheck size={14} />
-                  <span>Escrow-Guaranteed Line</span>
+                <div className="hidden sm:flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span>Escrow Protection Line</span>
                 </div>
               </div>
 
@@ -153,7 +183,7 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
               <div className="bg-wood-50 border-b border-wood-100 p-3 px-4 flex items-start space-x-2.5">
                 <Info size={14} className="text-wood-600 mt-0.5 flex-shrink-0" />
                 <p className="text-[11px] text-wood-600 leading-normal">
-                  <strong>Safety Notice:</strong> To protect our students from fraud, sharing phone numbers, emails, or social links is disabled. If you make transactions or communicate outside this box, you lose all Dormiversity ₦ Escrow Protection.
+                  <strong>Safety Protocol:</strong> To protect our students from fraud, sharing phone numbers, emails, or social handles is disallowed. Communicating or transacting outside this secure line voids the ₦ Escrow Guarantee.
                 </p>
               </div>
 
@@ -164,10 +194,10 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
                   return (
                     <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       {/* Message Bubble */}
-                      <div className={`max-w-[80%] rounded-2xl p-3 text-sm leading-relaxed shadow-2xs ${
+                      <div className={`max-w-[80%] rounded-2xl p-3 text-sm leading-relaxed shadow-3xs ${
                         isMe 
-                          ? 'bg-wood-600 text-white rounded-br-none' 
-                          : 'bg-wood-100 text-wood-950 rounded-bl-none border border-wood-200/50'
+                          ? 'bg-wood-700 text-white rounded-br-none' 
+                          : 'bg-wood-100 text-wood-950 rounded-bl-none border border-wood-200/40'
                       }`}>
                         {msg.isBlocked ? (
                           <div className="flex items-start space-x-1 text-red-500 italic">
@@ -209,7 +239,7 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
                     setInputText(e.target.value);
                     if (blockedAlert) setBlockedAlert(null); // Clear on retyping
                   }}
-                  placeholder="Type your message securely... (phone, emails, and links are blocked)"
+                  placeholder="Type your message securely..."
                   className="flex-1 bg-wood-50 border border-wood-200 focus:border-wood-500 rounded-xl px-4 py-3 text-sm text-wood-950 outline-hidden placeholder-wood-400 focus:ring-1 focus:ring-wood-500 transition-all"
                 />
                 <button
@@ -222,11 +252,11 @@ export default function ChatInbox({ activeUser, threads, messages, onSendMessage
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-wood-50/20">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-wood-50/10">
               <MessageSquare size={48} className="text-wood-300 mb-4" />
               <h3 className="font-display font-bold text-lg text-wood-950">Select a Secure Chat Line</h3>
               <p className="text-xs text-wood-500 max-w-sm mt-1 leading-relaxed">
-                Connect with prospective roommates, landlords, or Roomly inspectors. All correspondence is securely moderated to prevent housing scams.
+                Connect with prospective roommates, landlords, or local student inspectors. All messages are securely audited to prevent tertiary student housing fraud.
               </p>
             </div>
           )}

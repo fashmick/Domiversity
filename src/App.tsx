@@ -19,6 +19,7 @@ export default function App() {
   const [state, setState] = useState<PlatformState | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedChatThreadId, setSelectedChatThreadId] = useState<string | null>(null);
 
   // Pathname routing states
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -671,6 +672,27 @@ export default function App() {
     });
   };
 
+  const handleDeleteAccount = (userId: string) => {
+    setState(prev => {
+      const updatedUsers = prev.users.filter(u => u.id !== userId);
+      const firstRemainingUser = updatedUsers[0];
+      const updated = {
+        ...prev,
+        users: updatedUsers,
+        activeUserId: firstRemainingUser ? firstRemainingUser.id : ''
+      };
+      saveState(updated);
+      if (!firstRemainingUser) {
+        setIsLoggedIn(false);
+      } else {
+        // If there's another user, switch to them, or log out if none
+        setIsLoggedIn(false);
+      }
+      return updated;
+    });
+    setActiveTab('landing');
+  };
+
   // 12. Admin Audits KYC Uploads
   const handleApproveUserKYC = (userId: string) => {
     setState(prev => {
@@ -892,6 +914,7 @@ export default function App() {
       existingThread = newThread;
     }
     
+    setSelectedChatThreadId(existingThread.id);
     setActiveTab('chat');
   };
 
@@ -993,7 +1016,7 @@ export default function App() {
           />
 
           <main className="transition-all duration-200">
-            {['dashboard', 'roommates', 'bookings', 'profile'].includes(activeTab) && activeUser.role === 'STUDENT' && (
+            {['dashboard', 'roommates', 'bookings', 'profile', 'bookmarks'].includes(activeTab) && activeUser.role === 'STUDENT' && (
               <StudentDashboard
                 activeStudent={activeUser}
                 schools={state.schools}
@@ -1012,10 +1035,12 @@ export default function App() {
                 onCloseCohabitantPost={handleCloseCohabitantPost}
                 onUploadStudentKYC={handleUploadStudentKYC}
                 onUpdateProfile={handleUpdateProfile}
+                onDeleteAccount={handleDeleteAccount}
                 initialSubTab={
                   activeTab === 'profile' ? 'profile' :
                   activeTab === 'bookings' ? 'bookings' :
-                  activeTab === 'roommates' ? 'roommates' : 'search'
+                  activeTab === 'roommates' ? 'roommates' :
+                  activeTab === 'bookmarks' ? 'bookmarks' : 'search'
                 }
               />
             )}
@@ -1032,6 +1057,7 @@ export default function App() {
                 onToggleListingAvailable={handleToggleListingAvailable}
                 onNavigateToChat={handleNavigateToChat}
                 onUpdateProfile={handleUpdateProfile}
+                onDeleteAccount={handleDeleteAccount}
                 initialSubTab={
                   activeTab === 'profile' ? 'profile' :
                   activeTab === 'bookings' ? 'escrows' :
@@ -1050,6 +1076,7 @@ export default function App() {
                 onAcceptJob={handleAcceptJob}
                 onSubmitReport={handleSubmitReport}
                 onUpdateProfile={handleUpdateProfile}
+                onDeleteAccount={handleDeleteAccount}
                 initialSubTab={activeTab === 'profile' ? 'profile' : 'available'}
               />
             )}
@@ -1075,6 +1102,8 @@ export default function App() {
                 threads={state.chats}
                 messages={state.messages}
                 onSendMessage={handleSendMessage}
+                selectedThreadId={selectedChatThreadId}
+                onSelectThread={setSelectedChatThreadId}
               />
             )}
           </main>

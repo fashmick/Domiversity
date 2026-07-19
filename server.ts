@@ -139,6 +139,14 @@ function enforceEscrowTimers(state: any): boolean {
         booking.status = 'RELEASED';
         changed = true;
 
+        // Open the room back up for another user to book as requested
+        if (state.hostels) {
+          const hostel = state.hostels.find((h: any) => h.id === booking.hostelId);
+          if (hostel) {
+            hostel.isAvailable = true;
+          }
+        }
+
         // Add System Bot message for auto-release
         const thread = state.chats?.find((c: any) => c.bookingId === booking.id);
         const threadId = thread?.id || 'thread_system_auto';
