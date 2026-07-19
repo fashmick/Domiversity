@@ -6,6 +6,7 @@ interface DormiversityLogoProps {
   showText?: boolean;
   textSize?: string;
   textColor?: string;
+  onClick?: () => void;
 }
 
 export default function DormiversityLogo({
@@ -13,10 +14,22 @@ export default function DormiversityLogo({
   className = '',
   showText = false,
   textSize = 'text-lg',
-  textColor = 'text-wood-900'
+  textColor = 'text-wood-900',
+  onClick
 }: DormiversityLogoProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick();
+    } else {
+      window.history.pushState({}, '', '/');
+    }
+  };
+
   return (
-    <div className={`flex items-center gap-2.5 select-none ${className}`}>
+    <div 
+      onClick={handleClick}
+      className={`flex items-center gap-2.5 select-none cursor-pointer hover:opacity-90 active:scale-[0.98] transition-all duration-200 ${className}`}
+    >
       {/* High-fidelity SVG of the Dormiversity "D" Wood Logo */}
       <svg
         width={size}

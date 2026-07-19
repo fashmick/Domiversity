@@ -474,14 +474,23 @@ app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
 });
 
 // --- GOOGLE OAUTH 2.0 PIPELINE ---
-app.get('/api/auth/google/url', (req, res) => {
+app.get('/api/auth/google/url', async (req, res) => {
   const role = req.query.role || 'STUDENT';
   const schoolId = req.query.schoolId || '';
   const origin = `${req.protocol}://${req.get('host')}`;
   const redirectUri = `${origin}/auth/callback`;
 
+  // Explicitly trigger state loading to fetch keys from JSON file/database
+  await getPlatformState();
+
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    // Gracefully route directly to setup/bypass page rather than throwing Google's 400 error
+    const bypassUrl = `${origin}/auth/callback?error=Keys+missing&state=${encodeURIComponent(JSON.stringify({ role, schoolId }))}`;
+    return res.json({ url: bypassUrl });
+  }
+
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID || '',
+    client_id: process.env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',

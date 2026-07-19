@@ -3,6 +3,7 @@ import { Home, ShieldAlert, CheckCircle2, Shield, Plus, Power, Users, DollarSign
 import { Hostel, Booking, InspectorJob, User as PlatformUser, School } from '../types';
 import { formatNaira, formatDate } from '../utils';
 import SchoolSelect from './SchoolSelect';
+import CustomSelect from './CustomSelect';
 
 interface LandlordDashboardProps {
   activeLandlord: PlatformUser;
@@ -516,16 +517,16 @@ export default function LandlordDashboard({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-bold mb-1.5">Government ID Type</label>
-                    <select
+                    <CustomSelect
                       value={onboardIdType}
-                      onChange={(e) => setOnboardIdType(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
-                    >
-                      <option value="National ID Card (NIN)">National Identity Number (NIN)</option>
-                      <option value="Driver's License">Driver's License</option>
-                      <option value="Permanent Voter's Card (PVC)">Voter's Card (PVC)</option>
-                      <option value="International Passport">International Passport</option>
-                    </select>
+                      onChange={(val) => setOnboardIdType(val)}
+                      options={[
+                        { value: 'National ID Card (NIN)', label: 'National Identity Number (NIN)' },
+                        { value: 'Driver\'s License', label: 'Driver\'s License' },
+                        { value: 'Permanent Voter\'s Card (PVC)', label: 'Voter\'s Card (PVC)' },
+                        { value: 'International Passport', label: 'International Passport' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold mb-1.5">ID Card Registration Number</label>
@@ -599,16 +600,16 @@ export default function LandlordDashboard({
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-wood-500 mb-0.5">Relationship</label>
-                        <select
+                        <CustomSelect
                           value={onboardEmergencyContactRelation}
-                          onChange={(e) => setOnboardEmergencyContactRelation(e.target.value)}
-                          className="w-full bg-wood-50 border border-wood-200 rounded-lg px-2 py-1 text-xs outline-hidden"
-                        >
-                          <option value="Next of Kin">Next of Kin</option>
-                          <option value="Attorney / Legal Manager">Attorney / Manager</option>
-                          <option value="Co-Owner">Co-Owner</option>
-                          <option value="Family Member">Family Member</option>
-                        </select>
+                          onChange={(val) => setOnboardEmergencyContactRelation(val)}
+                          options={[
+                            { value: 'Next of Kin', label: 'Next of Kin' },
+                            { value: 'Attorney / Legal Manager', label: 'Attorney / Manager' },
+                            { value: 'Co-Owner', label: 'Co-Owner' },
+                            { value: 'Family Member', label: 'Family Member' }
+                          ]}
+                        />
                       </div>
                     </div>
                     <div>
@@ -638,16 +639,16 @@ export default function LandlordDashboard({
                   <div className="border border-wood-200 bg-white rounded-2xl p-4 flex flex-col justify-between space-y-3">
                     <div>
                       <label className="block font-bold text-wood-700 mb-1.5">Property Management Authority Doc Type</label>
-                      <select
+                      <CustomSelect
                         value={onboardProofDocType}
-                        onChange={(e) => setOnboardProofDocType(e.target.value)}
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-1.5 text-xs outline-hidden mb-2"
-                      >
-                        <option value="Deed of Conveyance">Deed of Conveyance</option>
-                        <option value="Certificate of Occupancy (C of O)">Certificate of Occupancy (C of O)</option>
-                        <option value="Hostel Management Mandate Agreement">Management Mandate Agreement</option>
-                        <option value="Letter of Administration">Letter of Administration</option>
-                      </select>
+                        onChange={(val) => setOnboardProofDocType(val)}
+                        options={[
+                          { value: 'Deed of Conveyance', label: 'Deed of Conveyance' },
+                          { value: 'Certificate of Occupancy (C of O)', label: 'Certificate of Occupancy (C of O)' },
+                          { value: 'Hostel Management Mandate Agreement', label: 'Management Mandate Agreement' },
+                          { value: 'Letter of Administration', label: 'Letter of Administration' }
+                        ]}
+                      />
                     </div>
 
                     {onboardProofDocImage ? (
@@ -855,29 +856,29 @@ export default function LandlordDashboard({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-bold text-wood-700 mb-1">Water Running Availability</label>
-                    <select
+                    <CustomSelect
                       value={onboardWaterAvailability}
-                      onChange={(e) => setOnboardWaterAvailability(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-xs outline-hidden"
-                    >
-                      <option value="Constant Borehole Running">Constant Borehole Running</option>
-                      <option value="Municipal Public Mains">Municipal Public Mains</option>
-                      <option value="Storage Tanker Deliveries">Storage Tanker Deliveries</option>
-                      <option value="Manual Well & Pump">Manual Well & Pump</option>
-                    </select>
+                      onChange={(val) => setOnboardWaterAvailability(val)}
+                      options={[
+                        { value: 'Constant Borehole Running', label: 'Constant Borehole Running' },
+                        { value: 'Municipal Public Mains', label: 'Municipal Public Mains' },
+                        { value: 'Storage Tanker Deliveries', label: 'Storage Tanker Deliveries' },
+                        { value: 'Manual Well & Pump', label: 'Manual Well & Pump' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold text-wood-700 mb-1">Electricity Grid / Backup</label>
-                    <select
+                    <CustomSelect
                       value={onboardElectricityAvailability}
-                      onChange={(e) => setOnboardElectricityAvailability(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-xs outline-hidden"
-                    >
-                      <option value="Grid Connection Only">Grid Connection Only</option>
-                      <option value="Grid + Constant Solar Power Backup">Grid + Solar Power Backup</option>
-                      <option value="Grid + Standby Generator Power Schedule">Grid + Generator Power Schedule</option>
-                      <option value="100% Off-Grid Premium Solar Hybrid">100% Off-Grid Solar Hybrid</option>
-                    </select>
+                      onChange={(val) => setOnboardElectricityAvailability(val)}
+                      options={[
+                        { value: 'Grid Connection Only', label: 'Grid Connection Only' },
+                        { value: 'Grid + Constant Solar Power Backup', label: 'Grid + Solar Power Backup' },
+                        { value: 'Grid + Standby Generator Power Schedule', label: 'Grid + Generator Power Schedule' },
+                        { value: '100% Off-Grid Premium Solar Hybrid', label: '100% Off-Grid Solar Hybrid' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold text-wood-700 mb-1">GPS Coordinates (Accurate Mapping)</label>
@@ -1030,19 +1031,19 @@ export default function LandlordDashboard({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-bold mb-1.5">Bank Name</label>
-                    <select
+                    <CustomSelect
                       value={onboardBankName}
-                      onChange={(e) => setOnboardBankName(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2.5 text-xs outline-hidden"
-                    >
-                      <option value="Access Bank">Access Bank</option>
-                      <option value="Guaranty Trust Bank (GTB)">Guaranty Trust Bank (GTB)</option>
-                      <option value="Zenith Bank">Zenith Bank</option>
-                      <option value="United Bank for Africa (UBA)">United Bank for Africa (UBA)</option>
-                      <option value="First Bank of Nigeria">First Bank of Nigeria</option>
-                      <option value="Wema Bank">Wema Bank</option>
-                      <option value="Kuda Bank Microfinance">Kuda Bank Microfinance</option>
-                    </select>
+                      onChange={(val) => setOnboardBankName(val)}
+                      options={[
+                        { value: 'Access Bank', label: 'Access Bank' },
+                        { value: 'Guaranty Trust Bank (GTB)', label: 'Guaranty Trust Bank (GTB)' },
+                        { value: 'Zenith Bank', label: 'Zenith Bank' },
+                        { value: 'United Bank for Africa (UBA)', label: 'United Bank for Africa (UBA)' },
+                        { value: 'First Bank of Nigeria', label: 'First Bank of Nigeria' },
+                        { value: 'Wema Bank', label: 'Wema Bank' },
+                        { value: 'Kuda Bank Microfinance', label: 'Kuda Bank Microfinance' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold mb-1.5">10-Digit Account Number</label>
@@ -1110,7 +1111,7 @@ export default function LandlordDashboard({
               <h3 className="font-bold text-emerald-950 border-b border-emerald-100 pb-2">Vetted Details:</h3>
               <div className="grid grid-cols-2 gap-y-2 text-[11px]">
                 <span className="text-wood-500 font-medium">Primary Campus:</span>
-                <span className="font-bold text-wood-900">{schools.find(s => s.id === activeLandlord.kycDetails?.schoolApprovalId || activeLandlord.schoolApprovalId)?.name || 'Direct Affiliate'}</span>
+                <span className="font-bold text-wood-900">{schools.find(s => s.id === activeLandlord.kycDetails?.schoolApprovalId || onboardSchoolApprovalId)?.name || 'Direct Affiliate'}</span>
                 
                 <span className="text-wood-500 font-medium">NIN/ID Verified:</span>
                 <span className="font-bold text-wood-900">National ID Card / NIN (Vetted)</span>
@@ -1472,29 +1473,29 @@ export default function LandlordDashboard({
 
                       <div>
                         <label className="block font-bold mb-1">Room Layout</label>
-                        <select
+                        <CustomSelect
                           value={newRoomType}
-                          onChange={(e) => setNewRoomType(e.target.value as any)}
-                          className="w-full bg-wood-50 border border-wood-200 rounded-xl px-2 py-2 text-sm outline-hidden"
-                        >
-                          <option value="Self-Contain">Self-Contain</option>
-                          <option value="Shared (2-in-a-room)">Shared (2-in-a-room)</option>
-                          <option value="Shared (4-in-a-room)">Shared (4-in-a-room)</option>
-                          <option value="Single Room">Single Room</option>
-                        </select>
+                          onChange={(val) => setNewRoomType(val as any)}
+                          options={[
+                            { value: 'Self-Contain', label: 'Self-Contain' },
+                            { value: 'Shared (2-in-a-room)', label: 'Shared (2-in-a-room)' },
+                            { value: 'Shared (4-in-a-room)', label: 'Shared (4-in-a-room)' },
+                            { value: 'Single Room', label: 'Single Room' }
+                          ]}
+                        />
                       </div>
 
                       <div>
                         <label className="block font-bold mb-1">Gender Restriction</label>
-                        <select
+                        <CustomSelect
                           value={newGender}
-                          onChange={(e) => setNewGender(e.target.value as any)}
-                          className="w-full bg-wood-50 border border-wood-200 rounded-xl px-2 py-2 text-sm outline-hidden"
-                        >
-                          <option value="Mixed">Mixed Allowed</option>
-                          <option value="Male">Males Only</option>
-                          <option value="Female">Females Only</option>
-                        </select>
+                          onChange={(val) => setNewGender(val as any)}
+                          options={[
+                            { value: 'Mixed', label: 'Mixed Allowed' },
+                            { value: 'Male', label: 'Males Only' },
+                            { value: 'Female', label: 'Females Only' }
+                          ]}
+                        />
                       </div>
                     </div>
 
@@ -1605,7 +1606,6 @@ export default function LandlordDashboard({
             )}
 
           </div>
-        )}
 
       {cameraActive && (
         <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center p-4 z-50 backdrop-blur-sm animate-fadeIn">

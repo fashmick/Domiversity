@@ -4,6 +4,7 @@ import { School, User } from '../types';
 import { formatNaira } from '../utils';
 import SchoolSelect from './SchoolSelect';
 import { motion, AnimatePresence } from 'motion/react';
+import DormiversityLogo from './DormiversityLogo';
 
 const CAROUSEL_SLIDES = [
   {
@@ -276,10 +277,7 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
       <header className="border-b border-wood-200 bg-white sticky top-0 z-45 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="bg-wood-500 text-white p-2 rounded-xl flex items-center justify-center">
-              <GraduationCap size={24} />
-            </div>
-            <span className="font-display font-bold text-xl tracking-tight text-wood-900">Dormiversity</span>
+            <DormiversityLogo size={36} showText={true} textSize="text-xl" />
           </div>
 
           <div className="flex items-center space-x-3">
@@ -927,10 +925,7 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 border-b border-wood-800 pb-8">
             <div className="space-y-4">
               <div className="flex items-center space-x-2 text-white">
-                <div className="bg-wood-500 p-2 rounded-xl">
-                  <GraduationCap size={20} />
-                </div>
-                <span className="font-display font-bold text-lg tracking-tight">Dormiversity</span>
+                <DormiversityLogo size={32} showText={true} textSize="text-lg" textColor="text-white" />
               </div>
               <p className="text-xs text-wood-400 leading-relaxed">
                 Nigeria's premier secure marketplace and vetting framework for tertiary student accommodations. Powered by modern escrow holding and local on-campus inspectors.
@@ -957,10 +952,10 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
             <div>
               <h6 className="font-bold text-white text-sm mb-4">Legal & Support</h6>
               <ul className="space-y-2 text-xs text-wood-400">
-                <li><span className="cursor-not-allowed text-wood-500">Terms of Service</span></li>
-                <li><span className="cursor-not-allowed text-wood-500">Privacy & NDPR Consent</span></li>
-                <li><span className="cursor-not-allowed text-wood-500">Refund & Dispute Rules</span></li>
-                <li><span className="hover:text-white transition-colors">Contact Admin Support</span></li>
+                <li><button onClick={() => window.history.pushState({}, '', '/terms?tab=terms')} className="hover:text-white transition-colors cursor-pointer text-left">Terms of Service</button></li>
+                <li><button onClick={() => window.history.pushState({}, '', '/terms?tab=privacy')} className="hover:text-white transition-colors cursor-pointer text-left">Privacy & NDPR Consent</button></li>
+                <li><button onClick={() => window.history.pushState({}, '', '/terms?tab=dataprotection')} className="hover:text-white transition-colors cursor-pointer text-left">Data Protection Compliance</button></li>
+                <li><button onClick={() => window.history.pushState({}, '', '/terms?tab=terms')} className="hover:text-white transition-colors cursor-pointer text-left">Refund & Dispute Rules</button></li>
               </ul>
             </div>
           </div>

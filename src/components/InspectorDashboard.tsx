@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClipboardCheck, ShieldAlert, CheckCircle2, Clock, MapPin, Clipboard, DollarSign, PenTool, Check, FileText, User } from 'lucide-react';
 import { InspectorJob, User as PlatformUser, School } from '../types';
 import { formatNaira, formatDate } from '../utils';
+import CustomSelect from './CustomSelect';
 
 interface InspectorDashboardProps {
   activeInspector: PlatformUser;
@@ -174,15 +175,15 @@ export default function InspectorDashboard({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-bold mb-1.5">Enrollment ID Type</label>
-                    <select
+                    <CustomSelect
                       value={idType}
-                      onChange={(e) => setIdType(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
-                    >
-                      <option value="Student ID Card">Campus Student ID Card</option>
-                      <option value="School Portal Registration PDF">School Portal Registration PDF</option>
-                      <option value="National Identity Card (NIN)">National ID Card (NIN)</option>
-                    </select>
+                      onChange={(val) => setIdType(val)}
+                      options={[
+                        { value: 'Student ID Card', label: 'Campus Student ID Card' },
+                        { value: 'School Portal Registration PDF', label: 'School Portal Registration PDF' },
+                        { value: 'National Identity Card (NIN)', label: 'National ID Card (NIN)' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold mb-1.5">Matric / Card Registration Number</label>
@@ -211,16 +212,16 @@ export default function InspectorDashboard({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-bold mb-1.5">Bank Name</label>
-                    <select
+                    <CustomSelect
                       value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2.5 text-xs outline-hidden"
-                    >
-                      <option value="Zenith Bank">Zenith Bank</option>
-                      <option value="Access Bank">Access Bank</option>
-                      <option value="Guaranty Trust Bank (GTB)">Guaranty Trust Bank (GTB)</option>
-                      <option value="United Bank for Africa (UBA)">United Bank for Africa (UBA)</option>
-                    </select>
+                      onChange={(val) => setBankName(val)}
+                      options={[
+                        { value: 'Zenith Bank', label: 'Zenith Bank' },
+                        { value: 'Access Bank', label: 'Access Bank' },
+                        { value: 'Guaranty Trust Bank (GTB)', label: 'Guaranty Trust Bank (GTB)' },
+                        { value: 'United Bank for Africa (UBA)', label: 'United Bank for Africa (UBA)' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold mb-1.5">10-Digit Bank Account Number</label>
@@ -412,70 +413,70 @@ export default function InspectorDashboard({
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div>
                               <label className="block font-bold mb-1.5">🚰 Borehole Running Water</label>
-                              <select
+                              <CustomSelect
                                 value={water}
-                                onChange={(e) => setWater(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-lg px-2 py-1.5 text-xs outline-hidden"
-                              >
-                                <option value="Excellent">Excellent Treatment</option>
-                                <option value="Good">Good/Operational</option>
-                                <option value="Poor">Poor pressure</option>
-                                <option value="Broken">Completely broken</option>
-                              </select>
+                                onChange={(val) => setWater(val as any)}
+                                options={[
+                                  { value: 'Excellent', label: 'Excellent Treatment' },
+                                  { value: 'Good', label: 'Good/Operational' },
+                                  { value: 'Poor', label: 'Poor pressure' },
+                                  { value: 'Broken', label: 'Completely broken' }
+                                ]}
+                              />
                             </div>
 
                             <div>
                               <label className="block font-bold mb-1.5">⚡ Power Grid Access</label>
-                              <select
+                              <CustomSelect
                                 value={power}
-                                onChange={(e) => setPower(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-lg px-2 py-1.5 text-xs outline-hidden"
-                              >
-                                <option value="Constant">Constant Grid</option>
-                                <option value="Scheduled (Gen/Solar)">Gen/Solar Backup</option>
-                                <option value="Unstable">Highly Unstable</option>
-                                <option value="No Power">No electrical supply</option>
-                              </select>
+                                onChange={(val) => setPower(val as any)}
+                                options={[
+                                  { value: 'Constant', label: 'Constant Grid' },
+                                  { value: 'Scheduled (Gen/Solar)', label: 'Gen/Solar Backup' },
+                                  { value: 'Unstable', label: 'Highly Unstable' },
+                                  { value: 'No Power', label: 'No electrical supply' }
+                                ]}
+                              />
                             </div>
 
                             <div>
                               <label className="block font-bold mb-1.5">🛡️ Security Fencing</label>
-                              <select
+                              <CustomSelect
                                 value={security}
-                                onChange={(e) => setSecurity(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-lg px-2 py-1.5 text-xs outline-hidden"
-                              >
-                                <option value="Highly Secured">Uniformed Guard + Gates</option>
-                                <option value="Moderately Secured">Gated fence only</option>
-                                <option value="Poor">No fence / Unsecured</option>
-                              </select>
+                                onChange={(val) => setSecurity(val as any)}
+                                options={[
+                                  { value: 'Highly Secured', label: 'Uniformed Guard + Gates' },
+                                  { value: 'Moderately Secured', label: 'Gated fence only' },
+                                  { value: 'Poor', label: 'No fence / Unsecured' }
+                                ]}
+                              />
                             </div>
 
                             <div>
                               <label className="block font-bold mb-1.5">🧼 Cleanliness Status</label>
-                              <select
+                              <CustomSelect
                                 value={cleanliness}
-                                onChange={(e) => setCleanliness(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-lg px-2 py-1.5 text-xs outline-hidden"
-                              >
-                                <option value="Spotless">Spotless Layout</option>
-                                <option value="Clean">Neat & Swept</option>
-                                <option value="Average">Average</option>
-                                <option value="Dirty">Needs cleanup</option>
-                              </select>
+                                onChange={(val) => setCleanliness(val as any)}
+                                options={[
+                                  { value: 'Spotless', label: 'Spotless Layout' },
+                                  { value: 'Clean', label: 'Neat & Swept' },
+                                  { value: 'Average', label: 'Average' },
+                                  { value: 'Dirty', label: 'Needs cleanup' }
+                                ]}
+                              />
                             </div>
 
                             <div>
                               <label className="block font-bold mb-1.5">📐 Visual vs Listing Match</label>
-                              <select
+                              <CustomSelect
                                 value={match}
-                                onChange={(e) => setMatch(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-lg px-2 py-1.5 text-xs outline-hidden"
-                              >
-                                <option value="Exactly as listed">Exactly as listed</option>
-                                <option value="Minor discrepancies">Minor discrepancies</option>
-                                <option value="Major discrepancy / Fake">Fake listing / Wrong photos</option>
-                              </select>
+                                onChange={(val) => setMatch(val as any)}
+                                options={[
+                                  { value: 'Exactly as listed', label: 'Exactly as listed' },
+                                  { value: 'Minor discrepancies', label: 'Minor discrepancies' },
+                                  { value: 'Major discrepancy / Fake', label: 'Fake listing / Wrong photos' }
+                                ]}
+                              />
                             </div>
                           </div>
 
@@ -494,15 +495,15 @@ export default function InspectorDashboard({
 
                             <div>
                               <label className="block font-bold mb-1.5">Final Vetting Recommendation</label>
-                              <select
+                              <CustomSelect
                                 value={recommendation}
-                                onChange={(e) => setRecommendation(e.target.value as any)}
-                                className="w-full bg-white border border-wood-200 rounded-xl px-2 py-3 text-xs outline-hidden font-bold"
-                              >
-                                <option value="Highly Recommended">⭐ Highly Recommended</option>
-                                <option value="Recommended with cautions">⚠️ Recommended with cautions</option>
-                                <option value="Do Not Book">❌ Do Not Book</option>
-                              </select>
+                                onChange={(val) => setRecommendation(val as any)}
+                                options={[
+                                  { value: 'Highly Recommended', label: '⭐ Highly Recommended' },
+                                  { value: 'Recommended with cautions', label: '⚠️ Recommended with cautions' },
+                                  { value: 'Do Not Book', label: '❌ Do Not Book' }
+                                ]}
+                              />
                             </div>
                           </div>
 

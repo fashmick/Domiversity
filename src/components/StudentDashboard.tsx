@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle } from 'lucide-react';
 import { Hostel, School, Booking, InspectorJob, CohabitantPost, User } from '../types';
 import { formatNaira, formatDate } from '../utils';
 import SchoolSelect from './SchoolSelect';
+import CustomSelect from './CustomSelect';
 
 interface StudentDashboardProps {
   activeStudent: User;
@@ -93,6 +94,7 @@ export default function StudentDashboard({
   const [detailedHostel, setDetailedHostel] = useState<Hostel | null>(null);
   const [showPaystackModal, setShowPaystackModal] = useState<{ isOpen: boolean; hostelId: string; type: 'RENT' | 'INSPECTION' }>({ isOpen: false, hostelId: '', type: 'RENT' });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [mockCard, setMockCard] = useState('access');
   const [disputeBookingId, setDisputeBookingId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeEvidence, setDisputeEvidence] = useState('');
@@ -312,26 +314,29 @@ export default function StudentDashboard({
                 />
               </div>
 
-              {/* Price Budget Range */}
+              {/* Price Budget Range (Input Field) */}
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider">Yearly Budget</label>
-                  <span className="text-xs font-semibold text-wood-950">{formatNaira(maxBudget)}</span>
+                <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">Max Yearly Budget (₦)</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-wood-500">₦</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    value={maxBudget || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      setMaxBudget(isNaN(val) ? 0 : val);
+                    }}
+                    placeholder="E.g., 400000"
+                    className="w-full pl-8 pr-4 py-2.5 bg-wood-50/50 border border-wood-200 hover:border-wood-400 rounded-xl text-sm font-semibold text-wood-950 placeholder-wood-400 focus:outline-hidden focus:ring-1 focus:ring-wood-500 transition-all shadow-2xs"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="100000"
-                  max="600000"
-                  step="20000"
-                  value={maxBudget}
-                  onChange={(e) => setMaxBudget(parseInt(e.target.value))}
-                  className="w-full accent-wood-600 cursor-pointer h-1.5 bg-wood-200 rounded-lg appearance-none"
-                />
-                <div className="flex justify-between text-[10px] text-wood-400 font-bold mt-1">
-                  <span>₦100k</span>
-                  <span>₦350k</span>
-                  <span>₦600k+</span>
-                </div>
+                {maxBudget > 0 && (
+                  <p className="text-[10px] text-wood-500 font-semibold mt-1.5 uppercase tracking-wider">
+                    Limit: <span className="text-wood-800">{formatNaira(maxBudget)}</span> per year
+                  </p>
+                )}
               </div>
 
               {/* Gender Preference */}
@@ -362,32 +367,45 @@ export default function StudentDashboard({
               {/* Room Type */}
               <div>
                 <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">Room Layout</label>
-                <select
+                <CustomSelect
                   value={selectedRoomType}
-                  onChange={(e) => setSelectedRoomType(e.target.value)}
-                  className="w-full bg-wood-50 border border-wood-200 text-wood-950 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-wood-500"
-                >
-                  <option value="">Any Layout</option>
-                  <option value="Self-Contain">Self-Contain</option>
-                  <option value="Shared (2-in-a-room)">2-in-a-room Shared</option>
-                  <option value="Shared (4-in-a-room)">4-in-a-room Shared</option>
-                  <option value="Single Room">Single Room</option>
-                </select>
+                  onChange={(val) => setSelectedRoomType(val)}
+                  placeholder="Any Layout"
+                  options={[
+                    { value: '', label: 'Any Layout' },
+                    { value: 'Self-Contain', label: 'Self-Contain' },
+                    { value: 'Shared (2-in-a-room)', label: '2-in-a-room Shared' },
+                    { value: 'Shared (4-in-a-room)', label: '4-in-a-room Shared' },
+                    { value: 'Single Room', label: 'Single Room' }
+                  ]}
+                />
               </div>
 
               {/* Amenities */}
               <div>
                 <label className="block text-xs font-bold text-wood-700 uppercase tracking-wider mb-2.5">Key Amenities</label>
-                <div className="space-y-2">
-                  {['Water Running', 'Generator/Solar', 'Fenced Security', 'WiFi', 'Kitchen'].map(amenity => {
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                  {[
+                    'Water Running',
+                    'Generator/Solar',
+                    'Fenced Security',
+                    'WiFi',
+                    'Kitchen',
+                    'AC/Air Conditioning',
+                    'Laundry Service',
+                    'Close to Campus',
+                    'Prepaid Meter',
+                    'Wardrobe',
+                    'Balcony'
+                  ].map(amenity => {
                     const isChecked = selectedAmenities.includes(amenity);
                     return (
-                      <label key={amenity} className="flex items-center space-x-2 text-sm text-wood-700 cursor-pointer">
+                      <label key={amenity} className="flex items-center space-x-2 text-sm text-wood-700 cursor-pointer select-none hover:text-wood-950 transition-colors">
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleAmenityChange(amenity)}
-                          className="rounded-md border-wood-300 text-wood-600 focus:ring-wood-500"
+                          className="rounded-md border-wood-300 text-wood-600 focus:ring-wood-500 h-4 w-4"
                         />
                         <span>{amenity}</span>
                       </label>
@@ -1100,15 +1118,15 @@ export default function StudentDashboard({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block font-bold text-wood-700 mb-1">Card Document Type</label>
-                      <select
+                      <CustomSelect
                         value={kycIdType}
-                        onChange={(e) => setKycIdType(e.target.value)}
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500"
-                      >
-                        <option value="Student ID Card">Student Registration ID Card</option>
-                        <option value="National Identity Number (NIN)">NIN Slip Card</option>
-                        <option value="Voter's Card">Permanent Voter's Card (PVC)</option>
-                      </select>
+                        onChange={(val) => setKycIdType(val)}
+                        options={[
+                          { value: 'Student ID Card', label: 'Student Registration ID Card' },
+                          { value: 'National Identity Number (NIN)', label: 'NIN Slip Card' },
+                          { value: 'Voter\'s Card', label: 'Permanent Voter\'s Card (PVC)' }
+                        ]}
+                      />
                     </div>
 
                     <div>
@@ -1370,10 +1388,14 @@ export default function StudentDashboard({
 
               <div className="space-y-2 text-left">
                 <label className="block font-bold text-wood-700">Choose Card (Mock Mode)</label>
-                <select className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden">
-                  <option>Access Bank Visa (•••• 4920)</option>
-                  <option>GTBank Mastercard (•••• 8821)</option>
-                </select>
+                <CustomSelect
+                  value={mockCard}
+                  onChange={(val) => setMockCard(val)}
+                  options={[
+                    { value: 'access', label: 'Access Bank Visa (•••• 4920)' },
+                    { value: 'gtb', label: 'GTBank Mastercard (•••• 8821)' }
+                  ]}
+                />
               </div>
 
               {isProcessingPayment ? (

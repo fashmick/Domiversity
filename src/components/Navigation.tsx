@@ -25,6 +25,7 @@ export default function Navigation({
   unreadMessagesCount
 }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [studentMenuOpen, setStudentMenuOpen] = useState(false);
 
   return (
     <nav className="bg-white border-b border-wood-200 sticky top-0 z-50 shadow-xs">
@@ -39,26 +40,40 @@ export default function Navigation({
             {/* Desktop Navigation Links */}
             <div className="hidden sm:ml-8 sm:flex sm:space-x-4 items-center">
               {currentRole === 'STUDENT' && (
-                <>
+                <div className="relative">
                   <button
-                    onClick={() => onNavigate('dashboard')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
+                    onClick={() => setStudentMenuOpen(!studentMenuOpen)}
+                    className="px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center space-x-1.5 bg-wood-50/80 border border-wood-200 hover:border-wood-400 text-wood-950 cursor-pointer shadow-2xs"
                   >
-                    Hostels Search
+                    <span>Student Services</span>
+                    <ChevronDown size={14} className={`text-wood-500 transition-transform ${studentMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <button
-                    onClick={() => onNavigate('roommates')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'roommates' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
-                  >
-                    Roommate Matcher
-                  </button>
-                  <button
-                    onClick={() => onNavigate('bookings')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:text-wood-900'}`}
-                  >
-                    My Bookings
-                  </button>
-                </>
+                  {studentMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setStudentMenuOpen(false)}></div>
+                      <div className="absolute left-0 mt-2 w-52 bg-white border border-wood-200 rounded-2xl shadow-xl py-2 z-20 divide-y divide-wood-50/60 animate-fadeIn">
+                        <button
+                          onClick={() => { onNavigate('dashboard'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'dashboard' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
+                        >
+                          <span>🔍</span> <span>Hostels Search</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('roommates'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'roommates' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
+                        >
+                          <span>👥</span> <span>Roommate Matcher</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('bookings'); setStudentMenuOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-wood-50 transition-colors cursor-pointer flex items-center space-x-2 ${activeTab === 'bookings' ? 'text-wood-950 bg-wood-50/40' : 'text-wood-600'}`}
+                        >
+                          <span>📅</span> <span>My Bookings</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {currentRole === 'LANDLORD' && (
@@ -119,17 +134,18 @@ export default function Navigation({
           {/* Right Section: User Info & Avatar */}
           <div className="flex items-center space-x-4">
             {/* User Profile Badge */}
-            <div className="bg-wood-50 text-wood-900 border border-wood-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-semibold shadow-xs">
-              <span className="hidden sm:inline-block">Signed In As:</span>
-              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold text-white ${
-                currentRole === 'STUDENT' ? 'bg-blue-600' :
-                currentRole === 'INSPECTOR' ? 'bg-amber-600' :
-                currentRole === 'LANDLORD' ? 'bg-emerald-600' : 'bg-red-600'
-              }`}>
-                {currentRole}
-              </span>
-              <span className="max-w-[80px] sm:max-w-[120px] truncate font-medium">{activeUser.name}</span>
-            </div>
+            {currentRole !== 'STUDENT' && (
+              <div className="bg-wood-50 text-wood-900 border border-wood-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-semibold shadow-xs">
+                <span className="hidden sm:inline-block">Signed In As:</span>
+                <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold text-white ${
+                  currentRole === 'INSPECTOR' ? 'bg-amber-600' :
+                  currentRole === 'LANDLORD' ? 'bg-emerald-600' : 'bg-red-600'
+                }`}>
+                  {currentRole}
+                </span>
+                <span className="max-w-[80px] sm:max-w-[120px] truncate font-medium">{activeUser.name}</span>
+              </div>
+            )}
 
             {/* Profile Avatar & Actions */}
             <div className="flex items-center space-x-2">

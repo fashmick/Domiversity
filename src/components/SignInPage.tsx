@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GraduationCap, ArrowLeft, Mail, Lock, ShieldCheck, HelpCircle, Eye, EyeOff, ChevronDown, User as UserIcon, Home, ChevronsUpDown, Check } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { getApiUrl } from '../utils';
+import DormiversityLogo from './DormiversityLogo';
 
 interface SignInPageProps {
   users: User[];
@@ -66,11 +67,8 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
           Back to Homepage
         </button>
 
-        <div className="flex items-center justify-center space-x-2">
-          <div className="bg-wood-500 text-white p-2.5 rounded-xl flex items-center justify-center shadow-md">
-            <GraduationCap size={28} />
-          </div>
-          <span className="font-display font-bold text-2xl tracking-tight text-wood-950">Dormiversity</span>
+        <div className="flex items-center justify-center">
+          <DormiversityLogo size={38} showText={true} textSize="text-2xl" onClick={onNavigateToLanding} />
         </div>
         <h2 className="mt-4 text-center text-3xl font-display font-extrabold text-wood-950">
           Sign In to Your Portal

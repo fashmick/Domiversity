@@ -953,11 +953,7 @@ export default function App() {
     <div className="bg-wood-50 min-h-screen font-sans">
       {currentPath === '/terms' ? (
         <TermsPage onBack={() => {
-          if (window.history.length > 1) {
-            window.history.back();
-          } else {
-            window.history.pushState({}, '', '/');
-          }
+          window.history.pushState({}, '', '/');
         }} />
       ) : !isLoggedIn ? (
         currentPath === '/signup' ? (
