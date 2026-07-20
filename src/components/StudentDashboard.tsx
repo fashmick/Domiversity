@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle, Lock } from 'lucide-react';
 import { Hostel, School, Booking, InspectorJob, CohabitantPost, User } from '../types';
-import { formatNaira, formatDate } from '../utils';
+import { formatNaira, formatDate, getApiUrl } from '../utils';
 import SchoolSelect from './SchoolSelect';
 import CustomSelect from './CustomSelect';
 
@@ -232,7 +232,7 @@ export default function StudentDashboard({
     setShowPaystackModal({ isOpen: true, hostelId, type });
   };
 
-  const handleConfirmPaystackPayment = () => {
+  const handleConfirmPaystackPayment = async () => {
     const hostel = hostels.find(h => h.id === showPaystackModal.hostelId);
     if (!hostel) return;
 
@@ -240,15 +240,29 @@ export default function StudentDashboard({
       ? hostel.price + (inspectionChoice === 'ROOMLY' ? 5000 : 0)
       : 5000; // inspection fee is 5000
 
-    // Retrieve public key from environment, with fallback to test key
-    const paystackPublicKey = ((import.meta as any).env?.VITE_PAYSTACK_PUBLIC_KEY) || "pk_test_d3a39e7a83d722e03940176d755711b7d5268ea8";
+    setIsProcessingPayment(true);
+
+    // Retrieve public key from configuration, fall back to environment or test key
+    let paystackPublicKey = ((import.meta as any).env?.VITE_PAYSTACK_PUBLIC_KEY) || "pk_test_d3a39e7a83d722e03940176d755711b7d5268ea8";
+    
+    try {
+      const configRes = await fetch(getApiUrl('/api/config'));
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.paystackPublicKey) {
+          paystackPublicKey = configData.paystackPublicKey;
+          console.log("Paystack public key loaded dynamically:", paystackPublicKey);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not retrieve custom Paystack key, utilizing fallback", e);
+    }
 
     if (typeof (window as any).PaystackPop === 'undefined') {
       alert("Paystack SDK is currently loading. Please wait a moment and try again.");
+      setIsProcessingPayment(false);
       return;
     }
-
-    setIsProcessingPayment(true);
 
     try {
       const handler = (window as any).PaystackPop.setup({

@@ -26,6 +26,7 @@ export default function Navigation({
 }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
+  const [studentDrawerOpen, setStudentDrawerOpen] = useState(false);
 
   return (
     <nav className="bg-white border-b border-wood-200 sticky top-0 z-50 shadow-xs">
@@ -39,62 +40,6 @@ export default function Navigation({
 
             {/* Desktop Navigation Links */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-1.5 items-center">
-              {currentRole === 'STUDENT' && (
-                <div className="relative">
-                  <button
-                    onClick={() => setStudentMenuOpen(!studentMenuOpen)}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 whitespace-nowrap bg-wood-100 hover:bg-wood-200/85 text-wood-950 border border-wood-200 cursor-pointer"
-                  >
-                    <span>
-                      {activeTab === 'dashboard' && 'Hostels Search'}
-                      {activeTab === 'roommates' && 'Roommate Finder'}
-                      {activeTab === 'bookings' && 'My Bookings'}
-                      {activeTab === 'bookmarks' && 'My Bookmarks'}
-                      {!['dashboard', 'roommates', 'bookings', 'bookmarks'].includes(activeTab) && 'Student Menu'}
-                    </span>
-                    <ChevronDown size={14} className={`transition-transform duration-200 ${studentMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {studentMenuOpen && (
-                    <>
-                      {/* Backdrop overlay to close when clicking outside */}
-                      <div className="fixed inset-0 z-40" onClick={() => setStudentMenuOpen(false)} />
-                      
-                      <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl border border-wood-200 shadow-xl py-1.5 z-50 animate-scaleUp">
-                        <button
-                          onClick={() => { onNavigate('dashboard'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'dashboard' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                        >
-                          <Compass size={14} className="text-wood-500" />
-                          <span>Hostels Search</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('roommates'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'roommates' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                        >
-                          <Users size={14} className="text-wood-500" />
-                          <span>Roommate Finder</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('bookings'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'bookings' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                        >
-                          <Settings size={14} className="text-wood-500" />
-                          <span>My Bookings</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('bookmarks'); setStudentMenuOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors flex items-center space-x-2 cursor-pointer ${activeTab === 'bookmarks' ? 'bg-wood-50 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-                        >
-                          <Bookmark size={14} className="text-wood-500" />
-                          <span>My Bookmarks</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
               {currentRole === 'LANDLORD' && (
                 <>
                   <button
@@ -135,27 +80,31 @@ export default function Navigation({
               )}
 
               {/* Secure Chat Link as Message Page */}
-              <button
-                onClick={() => onNavigate('chat')}
-                className={`relative px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'chat' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-              >
-                <MessageSquare size={14} />
-                <span>Message Page</span>
-                {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                    {unreadMessagesCount}
-                  </span>
-                )}
-              </button>
+              {currentRole !== 'STUDENT' && (
+                <button
+                  onClick={() => onNavigate('chat')}
+                  className={`relative px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'chat' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                >
+                  <MessageSquare size={14} />
+                  <span>Message Page</span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Settings Link */}
-              <button
-                onClick={() => onNavigate('profile')}
-                className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'profile' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
-              >
-                <Settings size={14} />
-                <span>Settings Page</span>
-              </button>
+              {currentRole !== 'STUDENT' && (
+                <button
+                  onClick={() => onNavigate('profile')}
+                  className={`px-2.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1 whitespace-nowrap cursor-pointer ${activeTab === 'profile' ? 'bg-wood-100 text-wood-950 font-bold' : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/50'}`}
+                >
+                  <Settings size={14} />
+                  <span>Settings Page</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -177,6 +126,21 @@ export default function Navigation({
 
             {/* Profile Avatar & Actions */}
             <div className="flex items-center space-x-2">
+              {currentRole === 'STUDENT' && (
+                <button
+                  onClick={() => setStudentDrawerOpen(true)}
+                  className="hidden sm:flex px-3.5 py-2 rounded-xl text-xs font-bold transition-all items-center space-x-2 bg-wood-900 hover:bg-wood-850 text-white shadow-xs hover:shadow-sm cursor-pointer mr-1"
+                >
+                  <Menu size={14} />
+                  <span>Menu</span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white animate-pulse">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => onNavigate('profile')}
@@ -204,48 +168,173 @@ export default function Navigation({
             {/* Mobile menu button */}
             <div className="flex items-center sm:hidden">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-lg text-wood-500 hover:text-wood-950 hover:bg-wood-100 focus:outline-hidden"
+                onClick={() => {
+                  if (currentRole === 'STUDENT') {
+                    setStudentDrawerOpen(true);
+                  } else {
+                    setMobileMenuOpen(!mobileMenuOpen);
+                  }
+                }}
+                className="inline-flex items-center justify-center p-2 rounded-lg text-wood-500 hover:text-wood-950 hover:bg-wood-100 focus:outline-hidden cursor-pointer"
               >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {(currentRole === 'STUDENT' ? studentDrawerOpen : mobileMenuOpen) ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="sm:hidden bg-white border-t border-wood-200 px-2 pt-2 pb-3 space-y-1">
-          {currentRole === 'STUDENT' && (
-            <>
-              <button
-                onClick={() => { onNavigate('dashboard'); setMobileMenuOpen(false); }}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'dashboard' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
-              >
-                Hostels Search
-              </button>
-              <button
-                onClick={() => { onNavigate('roommates'); setMobileMenuOpen(false); }}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'roommates' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
-              >
-                Roommate Finder
-              </button>
-              <button
-                onClick={() => { onNavigate('bookings'); setMobileMenuOpen(false); }}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'bookings' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
-              >
-                My Bookings
-              </button>
-              <button
-                onClick={() => { onNavigate('bookmarks'); setMobileMenuOpen(false); }}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${activeTab === 'bookmarks' ? 'bg-wood-100 text-wood-950 font-semibold' : 'text-wood-600 hover:bg-wood-50'}`}
-              >
-                My Bookmarks
-              </button>
-            </>
-          )}
+      {/* Student Slide-out Side Drawer */}
+      {currentRole === 'STUDENT' && (
+        <>
+          {/* Backdrop Overlay with transition */}
+          <div
+            className={`fixed inset-0 bg-black/45 z-50 transition-opacity duration-300 ease-in-out ${
+              studentDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+            onClick={() => setStudentDrawerOpen(false)}
+          />
 
+          {/* Drawer Panel sliding in from left */}
+          <div
+            className={`fixed top-0 left-0 bottom-0 w-72 max-w-full bg-white z-50 shadow-2xl border-r border-wood-200 flex flex-col transform transition-transform duration-350 ease-in-out ${
+              studentDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            {/* Header */}
+            <div className="p-5 border-b border-wood-100 flex items-center justify-between bg-wood-50/50">
+              <div className="flex items-center space-x-2">
+                <DormiversityLogo size={32} showText={true} textSize="text-md font-bold" textColor="text-wood-950" />
+              </div>
+              <button
+                onClick={() => setStudentDrawerOpen(false)}
+                className="p-1.5 rounded-lg text-wood-500 hover:text-wood-950 hover:bg-wood-100 transition-colors cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Student Account Card */}
+            <div className="px-5 py-4 border-b border-wood-100 bg-white">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-wood-100 overflow-hidden border border-wood-200">
+                  {activeUser.profilePicture ? (
+                    <img src={activeUser.profilePicture} alt={activeUser.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-wood-550 text-white font-bold flex items-center justify-center text-sm">
+                      {activeUser.name ? activeUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-wood-950 truncate">{activeUser.name}</h4>
+                  <p className="text-[10px] text-wood-500 font-semibold tracking-wider uppercase">Student Portal</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation links inside drawer */}
+            <div className="flex-1 overflow-y-auto py-3 px-3.5 space-y-1 bg-white">
+              <button
+                onClick={() => { onNavigate('dashboard'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center space-x-3 cursor-pointer ${
+                  activeTab === 'dashboard'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <Compass size={16} className={activeTab === 'dashboard' ? 'text-wood-900' : 'text-wood-500'} />
+                <span>Hostels Search</span>
+              </button>
+
+              <button
+                onClick={() => { onNavigate('roommates'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center space-x-3 cursor-pointer ${
+                  activeTab === 'roommates'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <Users size={16} className={activeTab === 'roommates' ? 'text-wood-900' : 'text-wood-500'} />
+                <span>Roommate Finder</span>
+              </button>
+
+              <button
+                onClick={() => { onNavigate('bookings'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center space-x-3 cursor-pointer ${
+                  activeTab === 'bookings'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <Settings size={16} className={activeTab === 'bookings' ? 'text-wood-900' : 'text-wood-500'} />
+                <span>My Bookings</span>
+              </button>
+
+              <button
+                onClick={() => { onNavigate('bookmarks'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center space-x-3 cursor-pointer ${
+                  activeTab === 'bookmarks'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <Bookmark size={16} className={activeTab === 'bookmarks' ? 'text-wood-900' : 'text-wood-500'} />
+                <span>My Bookmarks</span>
+              </button>
+
+              <div className="h-[1px] my-3 bg-wood-100" />
+
+              <button
+                onClick={() => { onNavigate('chat'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                  activeTab === 'chat'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <MessageSquare size={16} className={activeTab === 'chat' ? 'text-wood-900' : 'text-wood-500'} />
+                  <span>Message Page</span>
+                </div>
+                {unreadMessagesCount > 0 && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-xs">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => { onNavigate('profile'); setStudentDrawerOpen(false); }}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center space-x-3 cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-wood-100 text-wood-950 shadow-xs'
+                    : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+                }`}
+              >
+                <Settings size={16} className={activeTab === 'profile' ? 'text-wood-900' : 'text-wood-500'} />
+                <span>Settings Page</span>
+              </button>
+            </div>
+
+            {/* Logout/Footer Area */}
+            <div className="p-4 border-t border-wood-100 bg-wood-50/30">
+              <button
+                onClick={() => { onLogout(); setStudentDrawerOpen(false); }}
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center justify-center space-x-2 cursor-pointer border border-transparent hover:border-red-100"
+              >
+                <LogOut size={14} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Mobile Menu (Only for Non-Student Roles since students use the drawer) */}
+      {mobileMenuOpen && currentRole !== 'STUDENT' && (
+        <div className="sm:hidden bg-white border-t border-wood-200 px-2 pt-2 pb-3 space-y-1">
           {currentRole === 'LANDLORD' && (
             <>
               <button
