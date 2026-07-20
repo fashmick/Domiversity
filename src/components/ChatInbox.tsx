@@ -6,6 +6,7 @@ import { checkMessageContactSharing } from '../state';
 
 interface ChatInboxProps {
   activeUser: User;
+  allUsers: User[];
   threads: ChatThread[];
   messages: Message[];
   onSendMessage: (threadId: string, text: string) => { success: boolean; error?: string };
@@ -15,6 +16,7 @@ interface ChatInboxProps {
 
 export default function ChatInbox({
   activeUser,
+  allUsers = [],
   threads,
   messages,
   onSendMessage,
@@ -40,6 +42,18 @@ export default function ChatInbox({
   const userThreads = threads.filter(thread => 
     thread.studentId === activeUser.id || thread.otherId === activeUser.id
   );
+
+  // Helper to resolve the other person in the thread dynamically to prevent name mismatch
+  const getThreadPartner = (thread: any) => {
+    const partnerId = thread.studentId === activeUser.id ? thread.otherId : thread.studentId;
+    const partner = allUsers.find(u => u.id === partnerId);
+    return {
+      id: partnerId,
+      name: partner ? partner.name : (thread.studentId === activeUser.id ? thread.otherName : 'User'),
+      role: partner ? partner.role : (thread.studentId === activeUser.id ? thread.otherRole : 'STUDENT'),
+      avatar: partner?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
+    };
+  };
 
   const activeThread = userThreads.find(t => t.id === selectedThreadId) || null;
   const activeThreadMessages = activeThread ? messages.filter(m => m.threadId === activeThread.id) : [];
@@ -100,6 +114,7 @@ export default function ChatInbox({
             ) : (
               userThreads.map(thread => {
                 const isSelected = activeThread?.id === thread.id;
+                const partner = getThreadPartner(thread);
                 return (
                   <button
                     key={thread.id}
@@ -111,13 +126,22 @@ export default function ChatInbox({
                       isSelected ? 'bg-wood-100/70 font-medium border-l-4 border-wood-600' : ''
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-wood-200 font-bold text-wood-700 flex items-center justify-center border border-wood-200/50 flex-shrink-0 text-sm">
-                      {thread.otherName.charAt(0)}
-                    </div>
+                    {partner.avatar ? (
+                      <img
+                        src={partner.avatar}
+                        alt={partner.name}
+                        referrerPolicy="no-referrer"
+                        className="w-10 h-10 rounded-full border border-wood-200/55 object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-wood-200 font-bold text-wood-700 flex items-center justify-center border border-wood-200/50 flex-shrink-0 text-sm">
+                        {partner.name.charAt(0)}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4 className="font-bold text-sm text-wood-950 truncate">
-                          {activeUser.role === 'STUDENT' ? thread.otherName : 'Student: ' + thread.otherName}
+                          {partner.name}
                         </h4>
                       </div>
                       <p className="text-[10px] text-wood-400 font-bold uppercase tracking-wider mt-0.5 truncate">
@@ -139,45 +163,59 @@ export default function ChatInbox({
           {activeThread ? (
             <>
               {/* Thread Header */}
-              <div className="p-4 border-b border-wood-200 bg-white flex items-center justify-between shadow-2xs">
-                <div className="flex items-center space-x-3">
-                  {/* Mobile Back Button */}
-                  <button
-                    onClick={() => setSelectedThreadId(null)}
-                    className="md:hidden p-2 -ml-1 hover:bg-wood-100 rounded-xl text-wood-600 transition-colors cursor-pointer"
-                    title="Back to Chats List"
-                  >
-                    <ArrowLeft size={20} />
-                  </button>
+              {(() => {
+                const partner = getThreadPartner(activeThread);
+                return (
+                  <div className="p-4 border-b border-wood-200 bg-white flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center space-x-3">
+                      {/* Mobile Back Button */}
+                      <button
+                        onClick={() => setSelectedThreadId(null)}
+                        className="md:hidden p-2 -ml-1 hover:bg-wood-100 rounded-xl text-wood-600 transition-colors cursor-pointer"
+                        title="Back to Chats List"
+                      >
+                        <ArrowLeft size={20} />
+                      </button>
 
-                  <div className="w-10 h-10 rounded-full bg-wood-600 text-white font-bold flex items-center justify-center text-sm">
-                    {activeThread.otherName.charAt(0)}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-wood-950 text-sm leading-snug">
-                      {activeThread.otherName}
-                    </h3>
-                    <div className="flex items-center space-x-1.5 text-xs text-wood-500 font-medium mt-0.5">
-                      <span className="px-1.5 py-0.5 bg-wood-100 rounded text-[10px] font-semibold text-wood-700 uppercase">
-                        {activeUser.role === 'STUDENT' ? activeThread.otherRole : 'Student'}
-                      </span>
-                      {activeThread.hostelName && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate max-w-[120px] sm:max-w-[200px] text-wood-600">
-                            Hostel: {activeThread.hostelName}
-                          </span>
-                        </>
+                      {partner.avatar ? (
+                        <img
+                          src={partner.avatar}
+                          alt={partner.name}
+                          referrerPolicy="no-referrer"
+                          className="w-10 h-10 rounded-full border border-wood-200/55 object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-wood-600 text-white font-bold flex items-center justify-center text-sm">
+                          {partner.name.charAt(0)}
+                        </div>
                       )}
+                      <div>
+                        <h3 className="font-bold text-wood-950 text-sm leading-snug">
+                          {partner.name}
+                        </h3>
+                        <div className="flex items-center space-x-1.5 text-xs text-wood-500 font-medium mt-0.5">
+                          <span className="px-1.5 py-0.5 bg-wood-100 rounded text-[10px] font-semibold text-wood-700 uppercase">
+                            {partner.role}
+                          </span>
+                          {activeThread.hostelName && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate max-w-[120px] sm:max-w-[200px] text-wood-600">
+                                Hostel: {activeThread.hostelName}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="hidden sm:flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold">
+                      <ShieldCheck size={14} className="text-emerald-600" />
+                      <span>Escrow Protection Line</span>
                     </div>
                   </div>
-                </div>
-
-                <div className="hidden sm:flex items-center space-x-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold">
-                  <ShieldCheck size={14} className="text-emerald-600" />
-                  <span>Escrow Protection Line</span>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Secure Chat Advice */}
               <div className="bg-wood-50 border-b border-wood-100 p-3 px-4 flex items-start space-x-2.5">

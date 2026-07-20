@@ -21,7 +21,6 @@ interface StudentDashboardProps {
   onNavigateToChat: (otherId: string, hostelId?: string, bookingId?: string) => void;
   onCreateCohabitantPost: (post: Omit<CohabitantPost, 'id' | 'studentId' | 'studentName' | 'studentPhoto' | 'createdAt' | 'isClosed'>) => void;
   onCloseCohabitantPost: (postId: string) => void;
-  onUploadStudentKYC: (idType: string, idNumber: string) => void;
   onUpdateProfile?: (updatedUser: User) => void;
   onDeleteAccount?: (userId: string) => void;
   initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile';
@@ -43,7 +42,6 @@ export default function StudentDashboard({
   onNavigateToChat,
   onCreateCohabitantPost,
   onCloseCohabitantPost,
-  onUploadStudentKYC,
   onUpdateProfile,
   onDeleteAccount,
   initialSubTab
@@ -151,11 +149,6 @@ export default function StudentDashboard({
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeEvidence, setDisputeEvidence] = useState('');
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
-  
-  // KYC form states
-  const [kycIdType, setKycIdType] = useState('Student ID Card');
-  const [kycIdNumber, setKycIdNumber] = useState('');
-  const [kycSubmitted, setKycSubmitted] = useState(false);
 
   // Profile settings state
   const [profileName, setProfileName] = useState(activeStudent.name);
@@ -208,6 +201,7 @@ export default function StudentDashboard({
   const [newPostDescription, setNewPostDescription] = useState('');
   const [newPostHabits, setNewPostHabits] = useState<string[]>([]);
   const [newPostGenderPref, setNewPostGenderPref] = useState<'Male' | 'Female' | 'Any'>('Any');
+  const [newPostMyGender, setNewPostMyGender] = useState<'Male' | 'Female'>('Male');
   const [roommateSearch, setRoommateSearch] = useState('');
 
   // Filtering hostels
@@ -311,7 +305,7 @@ export default function StudentDashboard({
     onCreateCohabitantPost({
       schoolId: activeStudent.schoolId,
       budget: newPostBudget,
-      gender: activeStudent.kycDetails?.idType ? 'Female' : 'Male', // Mock gender based on profile or fallback
+      gender: newPostMyGender,
       genderPreference: newPostGenderPref,
       habits: newPostHabits.length > 0 ? newPostHabits : ['Studious', 'Quiet'],
       description: newPostDescription
@@ -319,6 +313,7 @@ export default function StudentDashboard({
 
     setShowCreatePostModal(false);
     setNewPostDescription('');
+    setNewPostMyGender('Male');
     setNewPostHabits([]);
     setNewPostGenderPref('Any');
   };
@@ -327,13 +322,6 @@ export default function StudentDashboard({
     setNewPostHabits(prev => 
       prev.includes(habit) ? prev.filter(h => h !== habit) : [...prev, habit]
     );
-  };
-
-  const handleKycSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!kycIdNumber.trim()) return;
-    onUploadStudentKYC(kycIdType, kycIdNumber);
-    setKycSubmitted(true);
   };
 
   return (
@@ -902,17 +890,31 @@ export default function StudentDashboard({
                         />
                       </div>
 
-                      <div>
-                        <label className="block font-bold text-wood-700 mb-1">Preferred Roommate Gender</label>
-                        <CustomSelect
-                          value={newPostGenderPref}
-                          onChange={(val: any) => setNewPostGenderPref(val)}
-                          options={[
-                            { value: 'Any', label: 'Any Gender / No Preference' },
-                            { value: 'Male', label: 'Male Only' },
-                            { value: 'Female', label: 'Female Only' }
-                          ]}
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-wood-700 mb-1">My Gender</label>
+                          <CustomSelect
+                            value={newPostMyGender}
+                            onChange={(val: any) => setNewPostMyGender(val)}
+                            options={[
+                              { value: 'Male', label: 'Male' },
+                              { value: 'Female', label: 'Female' }
+                            ]}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-wood-700 mb-1">Preferred Roommate Gender</label>
+                          <CustomSelect
+                            value={newPostGenderPref}
+                            onChange={(val: any) => setNewPostGenderPref(val)}
+                            options={[
+                              { value: 'Any', label: 'Any Gender / No Preference' },
+                              { value: 'Male', label: 'Male Only' },
+                              { value: 'Female', label: 'Female Only' }
+                            ]}
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -1059,7 +1061,7 @@ export default function StudentDashboard({
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
         );

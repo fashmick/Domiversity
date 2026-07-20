@@ -52,11 +52,26 @@ export default function App() {
         const res = await fetch(getApiUrl('/api/state'));
         if (res.ok) {
           const data = await res.json();
-          setState(data);
           
-          // If already logged in as a normal user in localStorage, restore login state
-          if (data.activeUserId) {
-            const user = data.users.find((u: any) => u.id === data.activeUserId);
+          // Load local user session and bookmarks from client storage
+          const localActiveUserId = localStorage.getItem('dormiversity_active_user_id') || '';
+          const localBookmarksStr = localStorage.getItem('dormiversity_bookmarks') || '[]';
+          let localBookmarks: string[] = [];
+          try {
+            localBookmarks = JSON.parse(localBookmarksStr);
+          } catch (e) {}
+
+          const mergedState = {
+            ...data,
+            activeUserId: localActiveUserId || data.activeUserId || (data.users && data.users[0] ? data.users[0].id : ''),
+            bookmarks: localBookmarks.length > 0 ? localBookmarks : (data.bookmarks || [])
+          };
+          
+          setState(mergedState);
+          
+          // If already logged in, restore login state
+          if (mergedState.activeUserId) {
+            const user = mergedState.users.find((u: any) => u.id === mergedState.activeUserId);
             if (user && user.role !== 'ADMIN') {
               setIsLoggedIn(true);
             }
@@ -169,6 +184,15 @@ export default function App() {
   const saveStateAndSync = async (newState: PlatformState) => {
     setState(newState);
     saveLocalStorageState(newState); // local fallback
+    
+    // Explicitly scope user session and bookmarks to this client's localStorage
+    if (newState.activeUserId) {
+      localStorage.setItem('dormiversity_active_user_id', newState.activeUserId);
+    } else {
+      localStorage.removeItem('dormiversity_active_user_id');
+    }
+    localStorage.setItem('dormiversity_bookmarks', JSON.stringify(newState.bookmarks || []));
+
     try {
       await fetch(getApiUrl('/api/state'), {
         method: 'POST',
@@ -883,8 +907,7 @@ export default function App() {
     // Find or create a thread in a direction-independent manner to prevent duplication
     let existingThread = state.chats.find(c => 
       ((c.studentId === activeUser.id && c.otherId === otherId) ||
-       (c.studentId === otherId && c.otherId === activeUser.id)) &&
-      (!hostelId || c.hostelId === hostelId)
+       (c.studentId === otherId && c.otherId === activeUser.id))
     );
     
     if (!existingThread) {
@@ -1033,7 +1056,6 @@ export default function App() {
                 onNavigateToChat={handleNavigateToChat}
                 onCreateCohabitantPost={handleCreateCohabitantPost}
                 onCloseCohabitantPost={handleCloseCohabitantPost}
-                onUploadStudentKYC={handleUploadStudentKYC}
                 onUpdateProfile={handleUpdateProfile}
                 onDeleteAccount={handleDeleteAccount}
                 initialSubTab={
@@ -1099,6 +1121,7 @@ export default function App() {
             {activeTab === 'chat' && (
               <ChatInbox
                 activeUser={activeUser}
+                allUsers={state.users}
                 threads={state.chats}
                 messages={state.messages}
                 onSendMessage={handleSendMessage}

@@ -18,7 +18,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'dormiversity_admin_2026';
 const JWT_SECRET = process.env.JWT_SECRET || 'dormiversity_secure_jwt_secret_key_2026';
 
 // Middlewares
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Custom CORS middleware to support external frontends like Vercel
 app.use((req, res, next) => {

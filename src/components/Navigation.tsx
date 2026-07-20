@@ -45,7 +45,13 @@ export default function Navigation({
                     onClick={() => setStudentMenuOpen(!studentMenuOpen)}
                     className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 whitespace-nowrap bg-wood-100 hover:bg-wood-200/85 text-wood-950 border border-wood-200 cursor-pointer"
                   >
-                    <span>Student Dashboard Menu</span>
+                    <span>
+                      {activeTab === 'dashboard' && 'Hostels Search'}
+                      {activeTab === 'roommates' && 'Roommate Finder'}
+                      {activeTab === 'bookings' && 'My Bookings'}
+                      {activeTab === 'bookmarks' && 'My Bookmarks'}
+                      {!['dashboard', 'roommates', 'bookings', 'bookmarks'].includes(activeTab) && 'Student Menu'}
+                    </span>
                     <ChevronDown size={14} className={`transition-transform duration-200 ${studentMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
