@@ -5,6 +5,7 @@ import { formatNaira } from '../utils';
 import SchoolSelect from './SchoolSelect';
 import { motion, AnimatePresence } from 'motion/react';
 import DormiversityLogo from './DormiversityLogo';
+import FaqSection from './FaqSection';
 
 const CAROUSEL_SLIDES = [
   {
@@ -852,6 +853,11 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
             </div>
           </div>
         </div>
+      </section>
+
+      {/* FAQs Section for Students, Landlords, and Inspectors */}
+      <section id="faqs" className="py-12 bg-white border-b border-wood-100">
+        <FaqSection initialCategory="ALL" />
       </section>
 
       {/* Testimonials */}

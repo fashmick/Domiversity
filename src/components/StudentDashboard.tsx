@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle, Lock } from 'lucide-react';
+import { Search, MapPin, Compass, Shield, Users, Bookmark, FileText, CheckCircle2, ShieldAlert, Heart, Calendar, CreditCard, ChevronRight, MessageSquare, Plus, Check, Clock, UserCheck, AlertTriangle, Lock, X, RefreshCw, Building, Flag, HelpCircle, ShieldCheck } from 'lucide-react';
 import { Hostel, School, Booking, InspectorJob, CohabitantPost, User } from '../types';
 import { formatNaira, formatDate, getApiUrl } from '../utils';
 import SchoolSelect from './SchoolSelect';
 import CustomSelect from './CustomSelect';
+import ReportHostelModal from './ReportHostelModal';
+import RefundModal from './RefundModal';
+import FaqSection from './FaqSection';
 
 interface StudentDashboardProps {
   activeStudent: User;
@@ -13,17 +16,19 @@ interface StudentDashboardProps {
   jobs: InspectorJob[];
   cohabitants: CohabitantPost[];
   bookmarks: string[];
+  users?: User[];
   onToggleBookmark: (hostelId: string) => void;
   onBookHostel: (hostelId: string, inspectionChoice?: 'SELF' | 'ROOMLY') => void;
   onRequestInspection: (hostelId: string) => void;
   onConfirmSatisfaction: (bookingId: string) => void;
   onOpenDispute: (bookingId: string, reason: string, evidence: string) => void;
+  onCancelBooking?: (bookingId: string, reason: string) => void;
   onNavigateToChat: (otherId: string, hostelId?: string, bookingId?: string) => void;
   onCreateCohabitantPost: (post: Omit<CohabitantPost, 'id' | 'studentId' | 'studentName' | 'studentPhoto' | 'createdAt' | 'isClosed'>) => void;
   onCloseCohabitantPost: (postId: string) => void;
   onUpdateProfile?: (updatedUser: User) => void;
   onDeleteAccount?: (userId: string) => void;
-  initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile';
+  initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'faqs' | 'profile';
 }
 
 export default function StudentDashboard({
@@ -34,11 +39,13 @@ export default function StudentDashboard({
   jobs,
   cohabitants,
   bookmarks,
+  users,
   onToggleBookmark,
   onBookHostel,
   onRequestInspection,
   onConfirmSatisfaction,
   onOpenDispute,
+  onCancelBooking,
   onNavigateToChat,
   onCreateCohabitantPost,
   onCloseCohabitantPost,
@@ -46,13 +53,17 @@ export default function StudentDashboard({
   onDeleteAccount,
   initialSubTab
 }: StudentDashboardProps) {
-  const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'profile'>(initialSubTab || 'search');
+  const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'faqs' | 'profile'>(initialSubTab || 'search');
 
   useEffect(() => {
     if (initialSubTab) {
       setSubTab(initialSubTab);
     }
   }, [initialSubTab]);
+
+  // Modal states for Report and Refund
+  const [reportModal, setReportModal] = useState<{ isOpen: boolean; hostelId: string; hostelName: string }>({ isOpen: false, hostelId: '', hostelName: '' });
+  const [refundModal, setRefundModal] = useState<{ isOpen: boolean; bookingId: string; hostelName: string; amount: number; currentStatus: string }>({ isOpen: false, bookingId: '', hostelName: '', amount: 0, currentStatus: '' });
   
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,57 +82,6 @@ export default function StudentDashboard({
     const interval = setInterval(() => setTick(t => t + 1), 10000); // 10s tick
     return () => clearInterval(interval);
   }, []);
-
-  // Synchronize typing in search input to automatically sync sidebar filters
-  React.useEffect(() => {
-    if (!searchTerm) return;
-    const term = searchTerm.toLowerCase().trim();
-
-    // 1. Try to match any institution name/abbreviation/ID
-    const matchedSchool = schools.find(s => 
-      s.name.toLowerCase().includes(term) || 
-      s.id.toLowerCase().includes(term) ||
-      // handle common abbreviation terms if found in name (e.g. UNILAG)
-      s.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(term)
-    );
-    if (matchedSchool) {
-      setSelectedSchool(matchedSchool.id);
-    }
-
-    // 2. Try to match room types
-    const roomTypes = ['Single Room', 'Shared Room', 'Self-Contain', 'Flat'];
-    const matchedRoomType = roomTypes.find(rt => rt.toLowerCase().includes(term));
-    if (matchedRoomType) {
-      setSelectedRoomType(matchedRoomType);
-    }
-
-    // 3. Try to match gender criteria
-    const genders = ['Male', 'Female', 'Mixed'];
-    const matchedGender = genders.find(g => 
-      g.toLowerCase() === term || 
-      (term.length >= 3 && g.toLowerCase().includes(term))
-    );
-    if (matchedGender) {
-      setSelectedGender(matchedGender);
-    }
-
-    // 4. Try to match budget numerical values (e.g. "200000", "300k")
-    const kMatch = term.match(/(\d+)\s*k/);
-    if (kMatch) {
-      const thousandVal = parseInt(kMatch[1], 10) * 1000;
-      if (thousandVal >= 20000 && thousandVal <= 5000000) {
-        setMaxBudget(thousandVal);
-      }
-    } else {
-      const numericMatch = term.match(/\b\d{5,7}\b/);
-      if (numericMatch) {
-        const directVal = parseInt(numericMatch[0], 10);
-        if (directVal >= 20000 && directVal <= 5000000) {
-          setMaxBudget(directVal);
-        }
-      }
-    }
-  }, [searchTerm, schools]);
 
   // Countdown Helper
   const getCountdownText = (createdAt: string) => {
@@ -206,18 +166,42 @@ export default function StudentDashboard({
 
   // Filtering hostels
   const filteredHostels = hostels.filter(hostel => {
-    const matchesKeyword = hostel.name.toLowerCase().includes(searchTerm.toLowerCase()) || hostel.address.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase().trim();
+    const school = schools.find(s => s.id === hostel.schoolId);
+
+    const matchesKeyword = !term || 
+      hostel.name.toLowerCase().includes(term) || 
+      hostel.address.toLowerCase().includes(term) ||
+      hostel.roomType.toLowerCase().includes(term) ||
+      hostel.gender.toLowerCase().includes(term) ||
+      hostel.description.toLowerCase().includes(term) ||
+      hostel.price.toString().includes(term) ||
+      hostel.amenities.some(a => a.toLowerCase().includes(term)) ||
+      (school && (
+        school.name.toLowerCase().includes(term) ||
+        (school.abbreviation && school.abbreviation.toLowerCase().includes(term)) ||
+        school.state.toLowerCase().includes(term) ||
+        school.type.toLowerCase().includes(term) ||
+        school.ownership.toLowerCase().includes(term)
+      ));
+
     const matchesSchool = selectedSchool ? hostel.schoolId === selectedSchool : true;
-    const matchesBudget = hostel.price <= maxBudget;
+    const matchesBudget = maxBudget > 0 ? hostel.price <= maxBudget : true;
     const matchesGender = selectedGender ? hostel.gender === selectedGender || hostel.gender === 'Mixed' : true;
     const matchesType = selectedRoomType ? hostel.roomType === selectedRoomType : true;
     const matchesAmenities = selectedAmenities.every(amenity => hostel.amenities.includes(amenity));
     return matchesKeyword && matchesSchool && matchesBudget && matchesGender && matchesType && matchesAmenities && hostel.isAvailable;
   });
 
-  const studentBookings = bookings.filter(b => b.studentId === activeStudent.id);
+  const studentBookings = bookings.filter(b => b.studentId === activeStudent.id || b.id === 'booking_demo_refund');
   const studentJobs = jobs.filter(j => j.studentId === activeStudent.id);
   const bookmarkedHostels = hostels.filter(h => bookmarks.includes(h.id));
+
+  // Local state to simulate live refund stage updates
+  const [simulatedRefundStages, setSimulatedRefundStages] = useState<Record<string, 'INITIATED' | 'ESCROW_REVERSED' | 'PAYSTACK_PROCESSING' | 'CREDITED'>>({});
+
+  const activeBookings = studentBookings.filter(b => b.status !== 'REFUNDED' && b.studentId === activeStudent.id);
+  const refundedBookings = studentBookings.filter(b => b.status === 'REFUNDED');
 
   // Toggle amenity selection
   const handleAmenityChange = (amenity: string) => {
@@ -353,6 +337,49 @@ export default function StudentDashboard({
             <p className="text-sm text-wood-600 mt-1">
               Find safe dorms, split costs with campus roommates, and verify listings through physical inspections.
             </p>
+          </div>
+
+          {/* Subtab Navigation Pills */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSubTab('search')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                subTab === 'search' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
+              }`}
+            >
+              <Compass size={14} />
+              <span>Hostels Directory</span>
+            </button>
+
+            <button
+              onClick={() => setSubTab('bookings')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                subTab === 'bookings' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
+              }`}
+            >
+              <Shield size={14} />
+              <span>My Bookings</span>
+            </button>
+
+            <button
+              onClick={() => setSubTab('roommates')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                subTab === 'roommates' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
+              }`}
+            >
+              <Users size={14} />
+              <span>Roommates</span>
+            </button>
+
+            <button
+              onClick={() => setSubTab('bookmarks')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                subTab === 'bookmarks' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
+              }`}
+            >
+              <Bookmark size={14} />
+              <span>Saved ({bookmarks.length})</span>
+            </button>
           </div>
         </div>
 
@@ -492,6 +519,15 @@ export default function StudentDashboard({
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-transparent border-0 outline-hidden focus:ring-0 text-sm text-wood-950 placeholder-wood-400"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="text-wood-400 hover:text-wood-600 focus:outline-none cursor-pointer pr-1"
+                    title="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
 
               {filteredHostels.length === 0 ? (
@@ -505,7 +541,7 @@ export default function StudentDashboard({
                   {filteredHostels.map(hostel => {
                     const school = schools.find(s => s.id === hostel.schoolId);
                     const isBookmarked = bookmarks.includes(hostel.id);
-                    const alreadyBooked = studentBookings.some(b => b.hostelId === hostel.id);
+                    const alreadyBooked = studentBookings.some(b => b.hostelId === hostel.id && b.status !== 'REFUNDED');
                     
                     return (
                       <div key={hostel.id} className="bg-white border border-wood-200/80 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col justify-between group">
@@ -581,15 +617,23 @@ export default function StudentDashboard({
                           <div className="mt-5 pt-4 border-t border-wood-100 flex items-center justify-between gap-2">
                             <button
                               onClick={() => setDetailedHostel(hostel)}
-                              className="px-3.5 py-2.5 bg-wood-50 hover:bg-wood-100 text-wood-800 text-xs font-semibold rounded-xl transition-all cursor-pointer flex-1"
+                              className="px-3 py-2 bg-wood-50 hover:bg-wood-100 text-wood-800 text-xs font-semibold rounded-xl transition-all cursor-pointer flex-1"
                             >
-                              Explore Details
+                              Explore
+                            </button>
+
+                            <button
+                              onClick={() => setReportModal({ isOpen: true, hostelId: hostel.id, hostelName: hostel.name })}
+                              className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all cursor-pointer"
+                              title="Report Hostel Listing"
+                            >
+                              <Flag size={15} />
                             </button>
                             
                             {alreadyBooked ? (
                               <button
                                 disabled
-                                className="px-3.5 py-2.5 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1 cursor-not-allowed flex-1"
+                                className="px-3 py-2 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1 cursor-not-allowed flex-1"
                               >
                                 <CheckCircle2 size={14} />
                                 <span>Booked</span>
@@ -597,7 +641,7 @@ export default function StudentDashboard({
                             ) : (
                               <button
                                 onClick={() => handleStartPayment(hostel.id, 'RENT')}
-                                className="px-3.5 py-2.5 bg-wood-600 hover:bg-wood-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-xs flex-1 text-center"
+                                className="px-3 py-2 bg-wood-600 hover:bg-wood-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-xs flex-1 text-center"
                               >
                                 Book Now
                               </button>
@@ -636,8 +680,24 @@ export default function StudentDashboard({
                 </button>
               </div>
             ) : (
-              studentBookings.map(booking => {
-                const inspection = studentJobs.find(j => j.hostelId === booking.hostelId);
+              <div className="space-y-10">
+                {/* Active Bookings list */}
+                {activeBookings.length === 0 ? (
+                  <div className="bg-wood-50/50 p-6 rounded-3xl border border-dashed border-wood-200 text-center py-10">
+                    <Compass size={32} className="text-wood-400 mx-auto mb-2" />
+                    <p className="text-sm font-semibold text-wood-900">No active housing bookings</p>
+                    <p className="text-xs text-wood-500 mt-1 mb-4">You do not have any live escrow rooms right now. Check the directory to find available spaces.</p>
+                    <button
+                      onClick={() => setSubTab('search')}
+                      className="px-4 py-2 bg-wood-600 hover:bg-wood-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                    >
+                      Browse Available Hostels
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {activeBookings.map(booking => {
+                      const inspection = studentJobs.find(j => j.hostelId === booking.hostelId);
                 
                 return (
                   <div key={booking.id} className="bg-white border border-wood-200/80 rounded-3xl overflow-hidden shadow-xs grid grid-cols-1 md:grid-cols-12">
@@ -754,38 +814,72 @@ export default function StudentDashboard({
                           <span>Chat with Landlord</span>
                         </button>
 
-                        {booking.status === 'IN_ESCROW' && (
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => setDisputeBookingId(booking.id)}
-                              className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                            >
-                              Not Satisfied / Dispute
-                            </button>
-                            <button
-                              onClick={() => onConfirmSatisfaction(booking.id)}
-                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-                            >
-                              Satisfied / Release Rent (90%)
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {booking.status === 'IN_ESCROW' && (
+                            <>
+                              <button
+                                onClick={() => setRefundModal({ isOpen: true, bookingId: booking.id, hostelName: booking.hostelName, amount: booking.price, currentStatus: booking.status })}
+                                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center space-x-1"
+                              >
+                                <CreditCard size={14} />
+                                <span>Request Refund (Bank Account)</span>
+                              </button>
+                              <button
+                                onClick={() => setDisputeBookingId(booking.id)}
+                                className="px-3.5 py-2 border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                              >
+                                Not Satisfied / Cancel Booking
+                              </button>
+                              <button
+                                onClick={() => onConfirmSatisfaction(booking.id)}
+                                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                              >
+                                Satisfied / Release Rent (90%)
+                              </button>
+                            </>
+                          )}
+
+                          {booking.status === 'REFUNDED' && (
+                            <div className="flex items-center space-x-2">
+                              <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-300 flex items-center space-x-1">
+                                <CheckCircle2 size={14} />
+                                <span>Money Refunded</span>
+                              </span>
+                              <span className="px-3 py-1.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-xl border border-blue-300 flex items-center space-x-1">
+                                <ShieldCheck size={14} />
+                                <span>Dispute Settled</span>
+                              </span>
+                            </div>
+                          )}
+
+                          {booking.status === 'DISPUTED' && (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => setRefundModal({ isOpen: true, bookingId: booking.id, hostelName: booking.hostelName, amount: booking.price, currentStatus: booking.status })}
+                                className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center space-x-1"
+                              >
+                                <CreditCard size={14} />
+                                <span>Provide Bank Details for Refund</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Open Dispute Dialog Box */}
+                      {/* Open Dispute / Cancel Dialog Box */}
                       {disputeBookingId === booking.id && (
                         <div className="bg-red-50 border border-red-200 p-4 rounded-2xl space-y-4 animate-fadeIn mt-4">
                           <div className="flex items-start space-x-2">
                             <ShieldAlert className="text-red-600 mt-0.5 flex-shrink-0" size={18} />
                             <div>
-                              <h5 className="text-xs font-bold text-red-800">Escalate Escrow Dispute</h5>
-                              <p className="text-[11px] text-red-700 leading-normal mt-0.5">Please outline what was wrong with the room. Funds will be completely frozen from being transferred to the Landlord until our Admin Support resolves the case.</p>
+                              <h5 className="text-xs font-bold text-red-800">Cancel Booking & Request Refund</h5>
+                              <p className="text-[11px] text-red-700 leading-normal mt-0.5">Please outline why you are not satisfied with the room. Once submitted, this room will automatically be made available again for other students, your booking will be cancelled, and you can search for and book another room immediately.</p>
                             </div>
                           </div>
 
                           <div className="space-y-3 text-xs">
                             <div>
-                              <label className="block font-bold text-wood-700 mb-1">Reason for Dispute</label>
+                              <label className="block font-bold text-wood-700 mb-1">Reason for Cancellation</label>
                               <textarea
                                 value={disputeReason}
                                 onChange={(e) => setDisputeReason(e.target.value)}
@@ -794,30 +888,30 @@ export default function StudentDashboard({
                                 rows={3}
                               />
                             </div>
-                            <div>
-                              <label className="block font-bold text-wood-700 mb-1">Evidence (Mock upload)</label>
-                              <input
-                                type="text"
-                                value={disputeEvidence}
-                                onChange={(e) => setDisputeEvidence(e.target.value)}
-                                placeholder="E.g., photo_bathroom_leak.jpg, video_broken_borehole.mp4"
-                                className="w-full bg-white border border-wood-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-hidden"
-                              />
-                            </div>
 
                             <div className="flex justify-end space-x-2">
                               <button
                                 onClick={() => setDisputeBookingId(null)}
                                 className="px-3.5 py-1.5 bg-white text-wood-700 border border-wood-200 rounded-lg font-semibold cursor-pointer"
                               >
-                                Cancel
+                                Keep Booking
                               </button>
                               <button
-                                onClick={() => handleSubmitDispute(booking.id)}
+                                onClick={() => {
+                                  if (disputeReason.trim()) {
+                                    if (onCancelBooking) {
+                                      onCancelBooking(booking.id, disputeReason);
+                                    } else {
+                                      onOpenDispute(booking.id, disputeReason, 'Cancelled by user');
+                                    }
+                                    setDisputeBookingId(null);
+                                    setDisputeReason('');
+                                  }
+                                }}
                                 disabled={!disputeReason.trim()}
                                 className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white rounded-lg font-bold cursor-pointer"
                               >
-                                Submit to Admin
+                                Confirm Cancel & Release Room
                               </button>
                             </div>
                           </div>
@@ -826,7 +920,161 @@ export default function StudentDashboard({
                     </div>
                   </div>
                 );
-              })
+              })}
+                  </div>
+                )}
+
+                {/* Refunded Bookings tracker section */}
+                {refundedBookings.length > 0 && (
+                  <div className="space-y-6 mt-12 border-t border-wood-200/60 pt-8">
+                    <div>
+                      <h3 className="font-display font-bold text-lg text-wood-950 flex items-center space-x-2">
+                        <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Rent Refund Tracker (100% Escrow Protection)</span>
+                      </h3>
+                      <p className="text-xs text-wood-500 mt-0.5">Dormiversity escrow guarantee. Track real-time Paystack reverse settlements and settlement ledger credits.</p>
+                    </div>
+
+                    <div className="space-y-6">
+                      {refundedBookings.map(booking => {
+                        const currentStage = simulatedRefundStages[booking.id] || booking.refundStage || 'INITIATED';
+                        
+                        // Define refund stage metadata
+                        const stages = [
+                          {
+                            id: 'INITIATED',
+                            label: 'Rejection Logged',
+                            desc: 'Tenant room satisfaction veto submitted. Refund initiated.',
+                            icon: ShieldAlert,
+                            color: 'text-amber-500 bg-amber-50'
+                          },
+                          {
+                            id: 'ESCROW_REVERSED',
+                            label: 'Escrow Reversed',
+                            desc: 'Rent escrow ledger reversed. Locked landlord commission cancelled.',
+                            icon: Lock,
+                            color: 'text-blue-500 bg-blue-50'
+                          },
+                          {
+                            id: 'PAYSTACK_PROCESSING',
+                            label: 'Paystack Gateway',
+                            desc: 'Processing return transfer via original card channel.',
+                            icon: CreditCard,
+                            color: 'text-indigo-500 bg-indigo-50'
+                          },
+                          {
+                            id: 'CREDITED',
+                            label: 'Settled',
+                            desc: 'Full rent value returned. Original pay source credited.',
+                            icon: CheckCircle2,
+                            color: 'text-emerald-500 bg-emerald-50'
+                          }
+                        ];
+
+                        const currentStageIndex = stages.findIndex(s => s.id === currentStage);
+
+                        const handleTriggerNextStage = () => {
+                          const currentIndex = stages.findIndex(s => s.id === currentStage);
+                          if (currentIndex < stages.length - 1) {
+                            const nextStageId = stages[currentIndex + 1].id as any;
+                            setSimulatedRefundStages(prev => ({
+                              ...prev,
+                              [booking.id]: nextStageId
+                            }));
+                          }
+                        };
+
+                        return (
+                          <div key={booking.id} className="bg-white border border-wood-200/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col space-y-6 transition-all hover:border-wood-300">
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4 border-b border-wood-100">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-16 h-16 bg-wood-100 rounded-2xl border border-wood-100 overflow-hidden relative flex-shrink-0">
+                                  <img src={booking.hostelPhoto} alt={booking.hostelName} className="w-full h-full object-cover" />
+                                </div>
+                                <div>
+                                  <span className="bg-red-50 text-red-700 font-bold text-[9px] tracking-wider px-2 py-0.5 rounded-sm uppercase inline-block">Cancelled & Refunded</span>
+                                  <h4 className="font-display font-bold text-wood-950 text-base mt-1">{booking.hostelName}</h4>
+                                  <p className="text-xs text-wood-500 mt-0.5">Cancellation Reason: <span className="italic">"{booking.cancelReason || 'Room conditions did not meet standards'}"</span></p>
+                                </div>
+                              </div>
+                              <div className="sm:text-right flex flex-col items-start sm:items-end">
+                                <p className="text-xs font-bold text-wood-400 uppercase tracking-wider">Refund Amount (100%)</p>
+                                <p className="font-bold text-[#3bb75e] text-xl mt-0.5">{formatNaira(booking.price)}</p>
+                                <span className="text-[10px] text-wood-400 mt-1">Initiated on {formatDate(booking.refundInitiatedAt || booking.createdAt).split(',')[0]}</span>
+                              </div>
+                            </div>
+
+                            {/* Stepper Grid */}
+                            <div>
+                              <p className="text-xs font-bold text-wood-700 uppercase tracking-wider mb-4 flex items-center space-x-1.5">
+                                <Clock size={12} className="text-amber-500" />
+                                <span>Escrow Refund Stages</span>
+                              </p>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+                                {stages.map((stage, idx) => {
+                                  const IconComponent = stage.icon;
+                                  const isCompleted = idx <= currentStageIndex;
+                                  const isActive = idx === currentStageIndex;
+
+                                  return (
+                                    <div key={stage.id} className={`p-4 rounded-2xl border transition-all flex flex-col space-y-2 ${
+                                      isActive ? 'bg-[#3bb75e]/5 border-[#3bb75e]/30' :
+                                      isCompleted ? 'bg-wood-50/50 border-wood-200/50 opacity-80' : 'bg-white border-wood-100 opacity-40'
+                                    }`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className={`p-1.5 rounded-lg ${stage.color}`}>
+                                          <IconComponent size={14} />
+                                        </div>
+                                        {isCompleted && !isActive ? (
+                                          <span className="bg-emerald-100 text-emerald-800 p-0.5 rounded-full"><Check size={10} /></span>
+                                        ) : isActive ? (
+                                          <span className="flex h-2 w-2 rounded-full bg-[#3bb75e] animate-ping"></span>
+                                        ) : null}
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-bold text-wood-900">{stage.label}</p>
+                                        <p className="text-[10px] text-wood-500 leading-normal mt-1">{stage.desc}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* dynamic tracker checker action */}
+                            <div className="bg-wood-50/60 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
+                              <div className="flex items-center space-x-2.5">
+                                <div className="p-2 bg-white rounded-xl border border-wood-200">
+                                  <Shield className="text-wood-600" size={16} />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-wood-800">Dynamic Payment Processor Sync</p>
+                                  <p className="text-[10px] text-wood-500">Query the active Paystack merchant ledger for secure settlement checks.</p>
+                                </div>
+                              </div>
+                              {currentStage !== 'CREDITED' ? (
+                                <button
+                                  onClick={handleTriggerNextStage}
+                                  className="px-4 py-2 bg-[#3bb75e] hover:bg-[#3bb75e]/90 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer"
+                                >
+                                  <RefreshCw size={12} className="animate-spin" />
+                                  <span>Update Settlement Status</span>
+                                </button>
+                              ) : (
+                                <span className="bg-emerald-100 text-emerald-800 font-bold text-xs px-3.5 py-1.5 rounded-xl flex items-center space-x-1">
+                                  <CheckCircle2 size={12} />
+                                  <span>Fully Settled & Returned</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -1167,30 +1415,6 @@ export default function StudentDashboard({
                   </div>
 
                   <div>
-                    <label className="block font-bold text-wood-700 mb-1">Phone Number (NGR)</label>
-                    <input
-                      type="tel"
-                      required
-                      value={profilePhone}
-                      onChange={(e) => setProfilePhone(e.target.value)}
-                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-bold text-wood-700 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      value={profileEmail}
-                      onChange={(e) => setProfileEmail(e.target.value)}
-                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
-                    />
-                  </div>
-
-                  <div>
                     <label className="block font-bold text-wood-700 mb-1">Department / Course</label>
                     <input
                       type="text"
@@ -1352,6 +1576,27 @@ export default function StudentDashboard({
                 <div>
                   <span className="font-bold text-wood-500">Listed Landlord</span>
                   <p className="font-semibold text-wood-950 text-sm mt-0.5">{detailedHostel.landlordName}</p>
+                  {(() => {
+                    const landlordUser = users?.find(u => u.id === detailedHostel.landlordId);
+                    const schoolApprovalStatus = landlordUser?.kycDetails?.schoolApprovalStatus || 'Pending';
+                    const verificationStatus = landlordUser?.kycStatus || 'NOT_SUBMITTED';
+                    return landlordUser ? (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                          verificationStatus === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-150'
+                        }`}>
+                          {verificationStatus === 'APPROVED' ? '✓ ID Verified' : '⚠ ID Unverified'}
+                        </span>
+                        <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                          schoolApprovalStatus === 'Approved' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                          schoolApprovalStatus === 'Not Approved' ? 'bg-red-50 text-red-700 border border-red-100' :
+                          'bg-amber-50 text-amber-700 border border-amber-100'
+                        }`}>
+                          🎓 School: {schoolApprovalStatus}
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -1421,129 +1666,189 @@ export default function StudentDashboard({
 
       {/* MOCK PAYSTACK OVERLAY PORTAL */}
       {showPaystackModal.isOpen && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-sm w-full overflow-hidden border border-wood-200 shadow-2xl animate-scaleUp">
+        <div className="fixed inset-0 bg-wood-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden border border-wood-200 shadow-2xl animate-scaleUp">
             
-            {/* Paystack Header */}
-            <div className="p-5 bg-[#09a5db] text-white flex justify-between items-center">
-              <div className="flex items-center space-x-2">
-                <CreditCard size={20} />
-                <span className="font-bold tracking-tight">paystack Checkout</span>
+            {/* Paystack Premium Header */}
+            <div className="p-5 bg-gradient-to-r from-[#011b33] via-[#09a5db] to-[#011b33] text-white flex justify-between items-center relative overflow-hidden">
+              <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center space-x-3 relative z-10">
+                <div className="p-2 bg-white/10 rounded-xl border border-white/20 backdrop-blur-xs">
+                  <CreditCard size={18} className="text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-bold tracking-tight text-sm">paystack</span>
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-semibold">CHECKOUT</span>
+                  </div>
+                  <p className="text-[10px] text-white/80 font-medium">256-Bit SSL Encrypted Escrow Portal</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' })}
-                className="text-white/80 hover:text-white text-sm"
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm transition-all cursor-pointer relative z-10"
+                title="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            {/* Paystack Checkout Content */}
-            <div className="p-6 text-center space-y-6 text-xs">
-              <div>
-                <p className="text-wood-400 font-semibold uppercase tracking-wider">PAYMENT DESTINATION</p>
-                <h4 className="font-bold text-wood-950 text-sm mt-1">Dormiversity Escrow Account</h4>
-                <p className="text-[10px] text-wood-400 mt-0.5">Reference ID: PAY-DORM-{Math.floor(Math.random() * 90000) + 10000}</p>
+            {/* Paystack Checkout Body */}
+            <div className="p-6 space-y-5 text-xs text-wood-700">
+              
+              {/* PAYMENT DESTINATION & ESCROW VAULT CARD */}
+              <div className="bg-gradient-to-br from-wood-50 via-white to-amber-50/30 p-4 rounded-2xl border border-wood-200 space-y-2 text-left shadow-2xs">
+                <div className="flex justify-between items-center border-b border-wood-150 pb-2">
+                  <span className="text-[10px] font-bold text-wood-400 uppercase tracking-wider flex items-center gap-1">
+                    <Building size={12} className="text-wood-600" />
+                    <span>Payment Destination</span>
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Active Escrow Vault</span>
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-wood-950 text-sm">Dormiversity Escrow Account</h4>
+                  <div className="flex items-center justify-between text-[11px] text-wood-500 mt-1">
+                    <span>Merchant Reference ID:</span>
+                    <span className="font-mono font-bold text-wood-800">PAY-DORM-{Math.floor(Math.random() * 90000) + 10000}</span>
+                  </div>
+                </div>
               </div>
 
               {showPaystackModal.type === 'RENT' ? (
                 <div className="space-y-4">
                   {/* Inspection Choice Radio Group */}
-                  <div className="bg-wood-50 p-4 rounded-2xl text-left border border-wood-200 space-y-3">
-                    <p className="text-[10px] font-bold text-wood-500 uppercase tracking-wider mb-1">Vetting & Inspection Choice</p>
+                  <div className="bg-wood-50/70 p-4 rounded-2xl text-left border border-wood-200 space-y-3">
+                    <p className="text-[10px] font-bold text-wood-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <ShieldCheck size={12} className="text-wood-600" />
+                      <span>Vetting & Inspection Choice</span>
+                    </p>
                     
-                    <label className="flex items-start space-x-3 cursor-pointer p-2 rounded-xl hover:bg-white transition-all">
+                    <label className={`flex items-start space-x-3 cursor-pointer p-3 rounded-xl transition-all border ${
+                      inspectionChoice === 'SELF' 
+                        ? 'bg-white border-wood-600 shadow-2xs ring-1 ring-wood-500' 
+                        : 'bg-white/60 border-wood-200 hover:bg-white'
+                    }`}>
                       <input 
                         type="radio" 
                         name="inspection-opt" 
                         checked={inspectionChoice === 'SELF'} 
                         onChange={() => setInspectionChoice('SELF')}
-                        className="mt-1 text-wood-600 focus:ring-wood-500"
+                        className="mt-1 text-wood-600 focus:ring-wood-500 cursor-pointer"
                       />
-                      <div>
-                        <p className="font-bold text-wood-900 text-xs">Inspect Myself (Free)</p>
-                        <p className="text-[10px] text-wood-500 leading-normal">You will physically travel to inspect the room yourself during your 3-day active escrow window.</p>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-wood-900 text-xs">Inspect Myself (Free)</p>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">₦0 Extra</span>
+                        </div>
+                        <p className="text-[10px] text-wood-500 leading-normal mt-0.5">You will physically travel to inspect the room yourself during your 3-day active escrow window.</p>
                       </div>
                     </label>
 
-                    <label className="flex items-start space-x-3 cursor-pointer p-2 rounded-xl hover:bg-white transition-all border border-transparent checked:border-wood-200">
+                    <label className={`flex items-start space-x-3 cursor-pointer p-3 rounded-xl transition-all border ${
+                      inspectionChoice === 'ROOMLY' 
+                        ? 'bg-white border-amber-500 shadow-2xs ring-1 ring-amber-500' 
+                        : 'bg-white/60 border-wood-200 hover:bg-white'
+                    }`}>
                       <input 
                         type="radio" 
                         name="inspection-opt" 
                         checked={inspectionChoice === 'ROOMLY'} 
                         onChange={() => setInspectionChoice('ROOMLY')}
-                        className="mt-1 text-wood-600 focus:ring-wood-500"
+                        className="mt-1 text-amber-600 focus:ring-amber-500 cursor-pointer"
                       />
-                      <div>
-                        <p className="font-bold text-wood-900 text-xs flex items-center gap-1">
-                          <span>Request Roomly Inspector</span>
-                          <span className="bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold text-[9px]">+₦5,000</span>
-                        </p>
-                        <p className="text-[10px] text-wood-500 leading-normal">Hire a vetted on-campus student inspector to visit the room, run checking protocols, and upload full photographic reviews.</p>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-wood-900 text-xs flex items-center gap-1">
+                            <span>Request Roomly Inspector</span>
+                          </p>
+                          <span className="bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded font-bold text-[9px]">+₦5,000</span>
+                        </div>
+                        <p className="text-[10px] text-wood-500 leading-normal mt-0.5">Hire a vetted on-campus student inspector to visit the room, run checking protocols, and upload full photographic reviews.</p>
                       </div>
                     </label>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-left">
-                    <div className="flex items-start space-x-2 text-amber-800">
+                  <div className="bg-amber-50/80 border border-amber-200 p-3.5 rounded-2xl text-left">
+                    <div className="flex items-start space-x-2.5 text-amber-900">
                       <Shield className="text-amber-600 flex-shrink-0 mt-0.5" size={16} />
                       <div>
-                        <h5 className="font-bold">Rent Escrow Security</h5>
-                        <p className="text-[10px] mt-0.5 text-amber-700 leading-normal">Your payment stays locked in our escrow vault. The landlord will not receive a single Naira until you complete the physical inspection and confirm your satisfaction (maximum of 3 days after payment).</p>
+                        <h5 className="font-bold text-xs text-amber-950">Rent Escrow Security</h5>
+                        <p className="text-[10px] mt-0.5 text-amber-800 leading-relaxed">Your payment stays locked in our escrow vault. The landlord will not receive a single Naira until you complete the physical inspection and confirm your satisfaction (maximum of 3 days after payment).</p>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-left">
-                  <div className="flex items-start space-x-2 text-blue-800">
+                <div className="bg-blue-50/80 border border-blue-200 p-4 rounded-2xl text-left">
+                  <div className="flex items-start space-x-2.5 text-blue-900">
                     <Check className="text-blue-600 flex-shrink-0 mt-0.5" size={16} />
                     <div>
-                      <h5 className="font-bold">Roomly Vetting Fee</h5>
-                      <p className="text-[10px] mt-0.5 text-blue-700 leading-normal">You are hiring a local student inspector to perform physical verification of structural details. Fee is ₦5,000.</p>
+                      <h5 className="font-bold text-xs text-blue-950">Roomly Vetting Fee</h5>
+                      <p className="text-[10px] mt-0.5 text-blue-800 leading-relaxed">You are hiring a local student inspector to perform physical verification of structural details. Fee is ₦5,000.</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="border-t border-b border-wood-100 py-4">
-                <p className="text-wood-400 font-bold uppercase tracking-wider">Amount Payable</p>
-                <p className="font-bold text-wood-950 text-2xl mt-1">
-                  {showPaystackModal.type === 'RENT'
-                    ? formatNaira((hostels.find(h => h.id === showPaystackModal.hostelId)?.price || 0) + (inspectionChoice === 'ROOMLY' ? 5000 : 0))
-                    : '₦5,000'
-                  }
-                </p>
+              {/* Amount Breakdown & Total */}
+              <div className="bg-wood-50 p-4 rounded-2xl border border-wood-200 space-y-2 text-left">
+                <div className="flex justify-between text-[11px] text-wood-600">
+                  <span>
+                    {showPaystackModal.type === 'RENT' ? 'Hostel Annual Rent:' : 'Vetting Fee:'}
+                  </span>
+                  <span className="font-bold">
+                    {showPaystackModal.type === 'RENT'
+                      ? formatNaira(hostels.find(h => h.id === showPaystackModal.hostelId)?.price || 0)
+                      : '₦5,000'}
+                  </span>
+                </div>
                 {showPaystackModal.type === 'RENT' && inspectionChoice === 'ROOMLY' && (
-                  <p className="text-[9px] text-wood-500 font-semibold mt-0.5">
-                    Includes ₦5,000 Inspection Fee
-                  </p>
+                  <div className="flex justify-between text-[11px] text-amber-800 font-medium">
+                    <span>On-Campus Inspector Fee:</span>
+                    <span className="font-bold">₦5,000</span>
+                  </div>
                 )}
+                <div className="border-t border-wood-200 pt-2 flex justify-between items-center">
+                  <span className="text-xs font-extrabold text-wood-950 uppercase tracking-wider">Total Amount Payable</span>
+                  <span className="font-extrabold text-emerald-700 text-2xl font-display">
+                    {showPaystackModal.type === 'RENT'
+                      ? formatNaira((hostels.find(h => h.id === showPaystackModal.hostelId)?.price || 0) + (inspectionChoice === 'ROOMLY' ? 5000 : 0))
+                      : '₦5,000'
+                    }
+                  </span>
+                </div>
               </div>
 
-              <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 text-left space-y-1 text-[11px] text-emerald-800 leading-relaxed">
-                <span className="font-bold text-emerald-950 block">🔒 Verified Escrow Channel</span>
-                <p>Your payment is collected and stored in Dormiversity's institutional escrow account. The landlord cannot touch these funds until you inspect the property or 3 days elapse.</p>
+              <div className="bg-emerald-50/80 p-3.5 rounded-2xl border border-emerald-200 text-left space-y-1 text-[11px] text-emerald-900 leading-relaxed">
+                <span className="font-bold text-emerald-950 flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span>Verified Escrow Channel</span>
+                </span>
+                <p className="text-[10px] text-emerald-800">Your payment is collected and stored in Dormiversity's institutional escrow account. The landlord cannot touch these funds until you inspect the property or 3 days elapse.</p>
               </div>
 
               {isProcessingPayment ? (
-                <div className="py-4 space-y-2">
+                <div className="py-4 space-y-2 text-center bg-emerald-50/50 rounded-2xl border border-emerald-100">
                   <Clock className="text-[#3bb75e] animate-spin mx-auto" size={24} />
-                  <p className="text-[#3bb75e] font-bold animate-pulse">Launching Paystack Secure Checkout...</p>
+                  <p className="text-[#3bb75e] font-bold text-xs animate-pulse">Launching Paystack Secure Gateway...</p>
                 </div>
               ) : (
                 <button
                   onClick={handleConfirmPaystackPayment}
-                  className="w-full py-3 bg-[#3bb75e] hover:bg-[#329f51] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center space-x-1.5"
+                  className="w-full py-3.5 bg-[#3bb75e] hover:bg-[#329f51] text-white font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center space-x-2 group"
                 >
-                  <Lock size={14} />
-                  <span>Book with Paystack</span>
+                  <Lock size={15} className="group-hover:scale-110 transition-transform" />
+                  <span>Proceed to Paystack Checkout</span>
                 </button>
               )}
 
-              <p className="text-[10px] text-wood-400 flex items-center justify-center space-x-1">
+              <p className="text-[10px] text-wood-400 flex items-center justify-center space-x-1 pt-1">
                 <ShieldCheck className="text-emerald-600" size={12} />
-                <span>Secured by Paystack. PCIDSS Compliant.</span>
+                <span>Secured by Paystack • PCIDSS Level 1 Compliant</span>
               </p>
             </div>
 
@@ -1551,10 +1856,36 @@ export default function StudentDashboard({
         </div>
       )}
 
+      {/* 6. HELP & FAQS SUBTAB */}
+      {subTab === 'faqs' && (
+        <div className="mt-4">
+          <FaqSection userRole="STUDENT" />
+        </div>
+      )}
+
+      {/* REPORT HOSTEL MODAL */}
+      <ReportHostelModal
+        isOpen={reportModal.isOpen}
+        hostelId={reportModal.hostelId}
+        hostelName={reportModal.hostelName}
+        onClose={() => setReportModal({ isOpen: false, hostelId: '', hostelName: '' })}
+      />
+
+      {/* REFUND MODAL WITH AUTOMATIC BANK ACCOUNT VERIFICATION */}
+      <RefundModal
+        isOpen={refundModal.isOpen}
+        bookingId={refundModal.bookingId}
+        hostelName={refundModal.hostelName}
+        amount={refundModal.amount}
+        currentStatus={refundModal.currentStatus}
+        onClose={() => setRefundModal({ isOpen: false, bookingId: '', hostelName: '', amount: 0, currentStatus: '' })}
+        onRefundSubmitted={() => {
+          if (onCancelBooking) {
+            onCancelBooking(refundModal.bookingId, "Refund requested with bank account details");
+          }
+        }}
+      />
+
     </div>
   );
-}
-
-function ShieldCheck({ className, size }: { className?: string; size?: number }) {
-  return <Check className={className} size={size} />;
 }

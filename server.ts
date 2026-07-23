@@ -10,6 +10,7 @@ import { createServer as createViteServer } from 'vite';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = 3000;
 const STATE_FILE_PATH = path.join(process.cwd(), 'state.json');
 
@@ -93,6 +94,20 @@ async function getPlatformState() {
           savePlatformState(platformState);
         } catch (err) {
           console.error('Error migrating schools in server.ts:', err);
+        }
+      }
+
+      // Ensure demo refund booking exists in state.json
+      if (platformState.bookings && !platformState.bookings.some((b: any) => b.id === 'booking_demo_refund')) {
+        try {
+          const { INITIAL_BOOKINGS } = await import('./src/mockData');
+          const demoRefund = INITIAL_BOOKINGS.find(b => b.id === 'booking_demo_refund');
+          if (demoRefund) {
+            platformState.bookings.push(demoRefund);
+            savePlatformState(platformState);
+          }
+        } catch (err) {
+          console.error('Error migrating demo refund booking in server.ts:', err);
         }
       }
 
@@ -297,6 +312,108 @@ app.get('/api/config', async (req, res) => {
   });
 });
 
+// Live NUBAN Bank Account Resolution Endpoint (Paystack API Integration)
+app.post('/api/bank/resolve', async (req, res) => {
+  const { accountNumber, bankName } = req.body;
+  const cleanNum = (accountNumber || '').toString().trim().replace(/\D/g, '');
+
+  if (!cleanNum || cleanNum.length !== 10) {
+    return res.status(400).json({ error: 'NUBAN bank account numbers must be exactly 10 numeric digits.' });
+  }
+
+  const state = await getPlatformState();
+  const paystackSecretKey = state.settings?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY;
+
+  const bankCodeMap: Record<string, string> = {
+    'Access Bank': '044',
+    'Access Bank (Diamond)': '063',
+    'ALAT by Wema': '035',
+    'Citi Bank': '023',
+    'Coronation Merchant Bank': '559',
+    'Covenant Microfinance Bank': '501',
+    'Dot Microfinance Bank': '50162',
+    'Easyby Zenith': '057',
+    'Ecobank Nigeria': '050',
+    'FairMoney Microfinance Bank': '51318',
+    'Fidelity Bank': '070',
+    'First Bank of Nigeria': '011',
+    'First City Monument Bank (FCMB)': '214',
+    'Globus Bank': '00103',
+    'Guaranty Trust Bank (GTB)': '058',
+    'Heritage Bank': '030',
+    'Jaiz Bank': '301',
+    'KeyStone Bank': '082',
+    'Kuda Bank (Kuda MFB)': '50211',
+    'Moniepoint Microfinance Bank': '50515',
+    'OPay Digital Services': '999992',
+    'OPTIMUS Bank': '107',
+    'PalmPay': '999991',
+    'Parallex Bank': '526',
+    'Polaris Bank': '076',
+    'PremiumTrust Bank': '105',
+    'Providus Bank': '101',
+    'Rubies MFB': '125',
+    'Signature Bank': '106',
+    'Stanbic IBTC Bank': '221',
+    'Standard Chartered Bank': '068',
+    'Sterling Bank': '232',
+    'SunTrust Bank': '100',
+    'Taj Bank': '302',
+    'Titan Trust Bank': '102',
+    'Union Bank of Nigeria': '032',
+    'United Bank for Africa (UBA)': '033',
+    'Unity Bank': '215',
+    'VFD Microfinance Bank': '566',
+    'Wema Bank': '035',
+    'Zenith Bank': '057'
+  };
+
+  const bankCode = bankCodeMap[bankName] || '057';
+
+  if (paystackSecretKey) {
+    try {
+      const psRes = await fetch(`https://api.paystack.co/bank/resolve?account_number=${cleanNum}&bank_code=${bankCode}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${paystackSecretKey}`
+        }
+      });
+      const psData = await psRes.json();
+      if (psData.status && psData.data?.account_name) {
+        return res.json({
+          status: 'success',
+          accountNumber: cleanNum,
+          accountName: psData.data.account_name,
+          bankName,
+          source: 'paystack'
+        });
+      } else {
+        return res.status(400).json({
+          error: psData.message || `NUBAN Resolution Error: Account number ${cleanNum} could not be resolved at ${bankName}. Please verify account details.`
+        });
+      }
+    } catch (err: any) {
+      console.error('Paystack bank resolution error:', err);
+    }
+  }
+
+  // Basic validation check for invalid dummy numbers if offline/sandbox
+  if (cleanNum.startsWith('000') || cleanNum.startsWith('999') || /(.)\1{9}/.test(cleanNum)) {
+    return res.status(400).json({
+      error: `NUBAN Resolution Error: Account number ${cleanNum} could not be resolved at ${bankName}. Record not found.`
+    });
+  }
+
+  return res.json({
+    status: 'success',
+    accountNumber: cleanNum,
+    accountName: `VERIFIED ACCOUNT (${bankName.toUpperCase()})`,
+    bankName,
+    source: 'sandbox',
+    notice: 'Paystack Secret Key can be added in Admin Portal for live NIBSS interbank lookup.'
+  });
+});
+
 // Temporary store for registration OTPs
 const otpStore: Record<string, { code: string; expiresAt: number }> = {};
 
@@ -364,7 +481,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
       if (emailRes.ok) {
         sentRealEmail = true;
       } else {
-        emailError = await emailRes.text();
+        const errJson = await emailRes.json().catch(() => null);
+        emailError = errJson?.message || (await emailRes.text());
         console.error('Resend delivery failed:', emailError);
       }
     } catch (err: any) {
@@ -377,8 +495,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
     success: true,
     sentRealEmail,
     emailError,
-    // Return sandbox code for local testing fallback so users don't get stuck if key is not configured yet
-    sandboxCode: !resendKey ? otp : undefined
+    // Return sandbox code fallback whenever real email is not delivered (e.g. testing domain restrictions, unverified recipient, or missing API key)
+    sandboxCode: (!sentRealEmail || !resendKey) ? otp : undefined
   });
 });
 
@@ -482,19 +600,29 @@ app.post('/api/admin/settings', authenticateAdmin, async (req, res) => {
   res.json({ status: 'success', settings: state.settings });
 });
 
+// Helper to generate precise HTTPS redirect URI for Google OAuth 2.0
+function getRedirectUri(req: express.Request): string {
+  const host = req.get('host') || 'localhost:3000';
+  let proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  if (!host.startsWith('localhost') && !host.startsWith('127.0.0.1') && proto === 'http') {
+    proto = 'https';
+  }
+  return `${proto}://${host}/auth/callback`;
+}
+
 // --- GOOGLE OAUTH 2.0 PIPELINE ---
 app.get('/api/auth/google/url', async (req, res) => {
   const role = req.query.role || 'STUDENT';
   const schoolId = req.query.schoolId || '';
-  const origin = `${req.protocol}://${req.get('host')}`;
-  const redirectUri = `${origin}/auth/callback`;
+  const redirectUri = getRedirectUri(req);
+  const origin = redirectUri.replace(/\/auth\/callback$/, '');
 
   // Explicitly trigger state loading to fetch keys from JSON file/database
   await getPlatformState();
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     // Gracefully route directly to setup/bypass page rather than throwing Google's 400 error
-    const bypassUrl = `${origin}/auth/callback?error=Keys+missing&state=${encodeURIComponent(JSON.stringify({ role, schoolId }))}`;
+    const bypassUrl = `${redirectUri}?error=Keys+missing&state=${encodeURIComponent(JSON.stringify({ role, schoolId }))}`;
     return res.json({ url: bypassUrl });
   }
 
@@ -517,8 +645,8 @@ app.get(['/auth/callback', '/auth/callback/'], async (req, res) => {
   await getPlatformState();
 
   const { code, state: stateStr, error } = req.query;
-  const origin = `${req.protocol}://${req.get('host')}`;
-  const redirectUri = `${origin}/auth/callback`;
+  const redirectUri = getRedirectUri(req);
+  const origin = redirectUri.replace(/\/auth\/callback$/, '');
 
   let role = 'STUDENT';
   let schoolId = '';

@@ -14,6 +14,9 @@ import InspectorDashboard from './components/InspectorDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import ChatInbox from './components/ChatInbox';
 import AdminLogin from './components/AdminLogin';
+import CustomerCareChatbot from './components/CustomerCareChatbot';
+import FaqSection from './components/FaqSection';
+import SupportPage from './components/SupportPage';
 
 export default function App() {
   const [state, setState] = useState<PlatformState | null>(null);
@@ -582,6 +585,64 @@ export default function App() {
     });
   };
 
+  // 9b. Student Cancels Booking & Requests Refund
+  const handleCancelBooking = (bookingId: string, reason: string) => {
+    setState(prev => {
+      const booking = prev.bookings.find(b => b.id === bookingId);
+      if (!booking) return prev;
+
+      const hostelId = booking.hostelId;
+
+      // Update hostel as available
+      const updatedHostels = prev.hostels.map(h => 
+        h.id === hostelId ? { ...h, isAvailable: true } : h
+      );
+
+      // Update booking status to 'REFUNDED' and store refund details
+      const updatedBookings = prev.bookings.map(b => 
+        b.id === bookingId 
+          ? { 
+              ...b, 
+              status: 'REFUNDED' as const,
+              cancelReason: reason,
+              refundInitiatedAt: new Date().toISOString(),
+              refundStage: 'INITIATED' as const
+            } 
+          : b
+      );
+
+      // Also clean up any inspection jobs tied to this booking/student/hostel
+      const updatedJobs = prev.jobs.filter(j => !(j.hostelId === hostelId && j.studentId === booking.studentId));
+
+      // Post cancellation message in the chat thread if it exists
+      const thread = prev.chats.find(c => c.bookingId === bookingId);
+      let updatedMessages = [...prev.messages];
+      if (thread) {
+        const cancelMsg: Message = {
+          id: 'msg_cancel_' + Date.now(),
+          threadId: thread.id,
+          senderId: 'admin_1',
+          senderName: 'System Bot',
+          text: `❌ BOOKING CANCELLED BY TENANT: The tenant has cancelled this booking. Reason: "${reason}". The hostel is now back on the public directory, and a full refund has been initiated to the student's wallet/bank.`,
+          createdAt: new Date().toISOString(),
+          isBlocked: false
+        };
+        updatedMessages.push(cancelMsg);
+      }
+
+      const updated = {
+        ...prev,
+        hostels: updatedHostels,
+        bookings: updatedBookings,
+        jobs: updatedJobs,
+        messages: updatedMessages
+      };
+      
+      saveState(updated);
+      return updated;
+    });
+  };
+
   // 10. Admin Resolves Escrow Dispute
   const handleResolveDispute = (bookingId: string, action: 'RELEASE' | 'REFUND') => {
     setState(prev => {
@@ -721,7 +782,15 @@ export default function App() {
   const handleApproveUserKYC = (userId: string) => {
     setState(prev => {
       const updatedUsers = prev.users.map(u => 
-        u.id === userId ? { ...u, kycStatus: 'APPROVED' as const } : u
+        u.id === userId 
+          ? { 
+              ...u, 
+              kycStatus: 'APPROVED' as const,
+              kycDetails: u.kycDetails 
+                ? { ...u.kycDetails, schoolApprovalStatus: 'Approved' as const } 
+                : undefined
+            } 
+          : u
       );
       const updated = {
         ...prev,
@@ -741,7 +810,8 @@ export default function App() {
               kycStatus: 'REJECTED' as const, 
               kycDetails: { 
                 ...u.kycDetails!, 
-                rejectionReason: reason 
+                rejectionReason: reason,
+                schoolApprovalStatus: 'Not Approved' as const
               } 
             } 
           : u
@@ -1039,7 +1109,7 @@ export default function App() {
           />
 
           <main className="transition-all duration-200">
-            {['dashboard', 'roommates', 'bookings', 'profile', 'bookmarks'].includes(activeTab) && activeUser.role === 'STUDENT' && (
+            {['dashboard', 'roommates', 'bookings', 'profile', 'bookmarks', 'faqs'].includes(activeTab) && activeUser.role === 'STUDENT' && (
               <StudentDashboard
                 activeStudent={activeUser}
                 schools={state.schools}
@@ -1048,11 +1118,13 @@ export default function App() {
                 jobs={state.jobs}
                 cohabitants={state.cohabitants}
                 bookmarks={state.bookmarks}
+                users={state.users}
                 onToggleBookmark={handleToggleBookmark}
                 onBookHostel={handleBookHostel}
                 onRequestInspection={handleRequestInspection}
                 onConfirmSatisfaction={handleConfirmSatisfaction}
                 onOpenDispute={handleOpenDispute}
+                onCancelBooking={handleCancelBooking}
                 onNavigateToChat={handleNavigateToChat}
                 onCreateCohabitantPost={handleCreateCohabitantPost}
                 onCloseCohabitantPost={handleCloseCohabitantPost}
@@ -1062,9 +1134,20 @@ export default function App() {
                   activeTab === 'profile' ? 'profile' :
                   activeTab === 'bookings' ? 'bookings' :
                   activeTab === 'roommates' ? 'roommates' :
-                  activeTab === 'bookmarks' ? 'bookmarks' : 'search'
+                  activeTab === 'bookmarks' ? 'bookmarks' :
+                  activeTab === 'faqs' ? 'faqs' : 'search'
                 }
               />
+            )}
+
+            {activeTab === 'support' && (
+              <SupportPage activeUser={activeUser} onNavigate={setActiveTab} />
+            )}
+
+            {activeTab === 'faqs' && activeUser.role !== 'STUDENT' && (
+              <div className="max-w-7xl mx-auto px-4 py-8">
+                <FaqSection userRole={activeUser.role as any} />
+              </div>
             )}
 
             {['dashboard', 'bookings', 'profile', 'payouts', 'verification'].includes(activeTab) && activeUser.role === 'LANDLORD' && (
@@ -1089,7 +1172,7 @@ export default function App() {
               />
             )}
 
-            {['dashboard', 'profile'].includes(activeTab) && activeUser.role === 'INSPECTOR' && (
+            {['dashboard', 'my-jobs', 'earnings', 'profile'].includes(activeTab) && activeUser.role === 'INSPECTOR' && (
               <InspectorDashboard
                 activeInspector={activeUser}
                 schools={state.schools}
@@ -1099,7 +1182,11 @@ export default function App() {
                 onSubmitReport={handleSubmitReport}
                 onUpdateProfile={handleUpdateProfile}
                 onDeleteAccount={handleDeleteAccount}
-                initialSubTab={activeTab === 'profile' ? 'profile' : 'available'}
+                initialSubTab={
+                  activeTab === 'profile' ? 'profile' :
+                  activeTab === 'my-jobs' ? 'my-jobs' :
+                  activeTab === 'earnings' ? 'earnings' : 'available'
+                }
               />
             )}
 
@@ -1132,6 +1219,9 @@ export default function App() {
           </main>
         </>
       )}
+
+      {/* Floating 24/7 AI Customer Support & In-App Chatbot Widget */}
+      <CustomerCareChatbot onNavigate={setActiveTab} />
     </div>
   );
 }

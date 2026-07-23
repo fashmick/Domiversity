@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClipboardCheck, ShieldAlert, CheckCircle2, Clock, MapPin, Clipboard, DollarSign, PenTool, Check, FileText, User, AlertCircle } from 'lucide-react';
 import { InspectorJob, User as PlatformUser, School } from '../types';
-import { formatNaira, formatDate } from '../utils';
+import { formatNaira, formatDate, getApiUrl } from '../utils';
 import CustomSelect from './CustomSelect';
+import { NIGERIAN_BANKS } from '../constants/banks';
 
 interface InspectorDashboardProps {
   activeInspector: PlatformUser;
@@ -91,6 +92,52 @@ export default function InspectorDashboard({
   const [bankName, setBankName] = useState('Zenith Bank');
   const [accountNum, setAccountNum] = useState('');
   const [accountName, setAccountName] = useState('');
+
+  // Auto NUBAN Resolution for Inspector Bank Details
+  const [isVerifyingBank, setIsVerifyingBank] = useState(false);
+  const [bankVerifyError, setBankVerifyError] = useState('');
+
+  useEffect(() => {
+    const cleanNum = accountNum.trim().replace(/\D/g, '');
+    if (!cleanNum || cleanNum.length < 10) {
+      setBankVerifyError('');
+      setIsVerifyingBank(false);
+      return;
+    }
+    if (cleanNum.length === 10) {
+      setIsVerifyingBank(true);
+      setBankVerifyError('');
+      const controller = new AbortController();
+      const timer = setTimeout(() => {
+        fetch(getApiUrl('/api/bank/resolve'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountNumber: cleanNum, bankName }),
+          signal: controller.signal
+        })
+          .then(async (res) => {
+            const data = await res.json();
+            setIsVerifyingBank(false);
+            if (res.ok && data.accountName) {
+              setAccountName(data.accountName);
+              setBankVerifyError('');
+            } else {
+              setBankVerifyError(data.error || `Could not resolve NUBAN account ${cleanNum} at ${bankName}`);
+            }
+          })
+          .catch((err) => {
+            if (err.name !== 'AbortError') {
+              setIsVerifyingBank(false);
+            }
+          });
+      }, 400);
+
+      return () => {
+        clearTimeout(timer);
+        controller.abort();
+      };
+    }
+  }, [accountNum, bankName]);
 
   // Report Form state
   const [water, setWater] = useState<'Excellent' | 'Good' | 'Poor' | 'Broken'>('Good');
@@ -217,12 +264,7 @@ export default function InspectorDashboard({
                     <CustomSelect
                       value={bankName}
                       onChange={(val) => setBankName(val)}
-                      options={[
-                        { value: 'Zenith Bank', label: 'Zenith Bank' },
-                        { value: 'Access Bank', label: 'Access Bank' },
-                        { value: 'Guaranty Trust Bank (GTB)', label: 'Guaranty Trust Bank (GTB)' },
-                        { value: 'United Bank for Africa (UBA)', label: 'United Bank for Africa (UBA)' }
-                      ]}
+                      options={NIGERIAN_BANKS}
                     />
                   </div>
                   <div>
@@ -301,37 +343,14 @@ export default function InspectorDashboard({
               </div>
             </div>
 
-            {/* Sub Tabs */}
-            <div className="flex border-b border-wood-200 pb-px space-x-2">
-              <button
-                onClick={() => setSubTab('available')}
-                className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${subTab === 'available' ? 'bg-wood-600 text-white shadow-2xs' : 'bg-white border border-wood-200 text-wood-600 hover:text-wood-950'}`}
-              >
-                Available Vetting Requests ({unassignedJobs.length})
-              </button>
-              <button
-                onClick={() => setSubTab('my-jobs')}
-                className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer relative ${subTab === 'my-jobs' ? 'bg-wood-600 text-white shadow-2xs' : 'bg-white border border-wood-200 text-wood-600 hover:text-wood-950'}`}
-              >
-                My Active Assignments
-                {pendingInspectionJobs.length > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-[9px] font-bold">
-                    {pendingInspectionJobs.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setSubTab('earnings')}
-                className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${subTab === 'earnings' ? 'bg-wood-600 text-white shadow-2xs' : 'bg-white border border-wood-200 text-wood-600 hover:text-wood-950'}`}
-              >
-                Completed Payout Logs
-              </button>
-              <button
-                onClick={() => setSubTab('profile')}
-                className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${subTab === 'profile' ? 'bg-wood-600 text-white shadow-2xs' : 'bg-white border border-wood-200 text-wood-600 hover:text-wood-950'}`}
-              >
-                My Profile
-              </button>
+            {/* Active Section Header */}
+            <div className="border-b border-wood-200 pb-3 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-wood-950 font-display">
+                {subTab === 'available' && `Available Vetting Requests (${unassignedJobs.length})`}
+                {subTab === 'my-jobs' && 'My Active Inspection Assignments'}
+                {subTab === 'earnings' && 'Completed Payout Logs'}
+                {subTab === 'profile' && 'Inspector Profile & Settings'}
+              </h2>
             </div>
 
             {/* AVAILABLE JOBS SUBTAB */}
@@ -589,30 +608,6 @@ export default function InspectorDashboard({
                       onChange={(e) => setProfileName(e.target.value)}
                       className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">Phone Number (NGR)</label>
-                      <input
-                        type="tel"
-                        required
-                        value={profilePhone}
-                        onChange={(e) => setProfilePhone(e.target.value)}
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-wood-700 mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        required
-                        value={profileEmail}
-                        onChange={(e) => setProfileEmail(e.target.value)}
-                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
-                      />
-                    </div>
                   </div>
 
                   <div>

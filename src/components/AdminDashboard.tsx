@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2, Key, CreditCard, Mail, Sliders } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, XCircle, Info, Landmark, HelpCircle, Users, Scale, FileText, Plus, AlertTriangle, MessageSquare, Compass, BarChart3, TrendingUp, Building2, Check, DollarSign, Trash2, Key, CreditCard, Mail, Sliders, Copy, ExternalLink } from 'lucide-react';
 import { User, Booking, InspectorJob, School } from '../types';
 import { formatNaira, formatDate, getApiUrl } from '../utils';
 
@@ -38,6 +38,7 @@ export default function AdminDashboard({
   const [resendKey, setResendKey] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
+  const [copiedRedirectUri, setCopiedRedirectUri] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isLoadingKeys, setIsLoadingKeys] = useState(false);
@@ -272,7 +273,7 @@ export default function AdminDashboard({
                       <div>
                         <span className="font-bold text-wood-400 block uppercase text-[9px] tracking-wider">2. Emergency Contact Info</span>
                         <p className="font-semibold text-wood-950 mt-1">Name: {user.kycDetails?.emergencyContactName || 'Not provided'}</p>
-                        <p className="text-wood-600 mt-0.5">Rel: {user.kycDetails?.emergencyContactRelation || 'Next of Kin'}</p>
+                        <p className="text-wood-600 mt-0.5">Rel: {user.kycDetails?.emergencyContactRelation || 'Family Member'}</p>
                         <p className="font-mono text-wood-600 mt-0.5">Phone: {user.kycDetails?.emergencyContactPhone || 'Not provided'}</p>
                       </div>
 
@@ -736,9 +737,47 @@ export default function AdminDashboard({
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-wood-400">
-                    Enter your Google Cloud Console Web Application credentials. Be sure to register the correct redirect URI shown in the auth flow callback window.
-                  </p>
+
+                  {/* Fix redirect_uri_mismatch Banner & Copy Helper */}
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                        <AlertTriangle size={14} className="text-amber-600" />
+                        Fix "Error 400: redirect_uri_mismatch"
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const uri = `${window.location.origin}/auth/callback`;
+                          navigator.clipboard.writeText(uri);
+                          setCopiedRedirectUri(true);
+                          setTimeout(() => setCopiedRedirectUri(false), 2000);
+                        }}
+                        className="px-3 py-1 bg-amber-900 hover:bg-black text-white text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                      >
+                        {copiedRedirectUri ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        <span>{copiedRedirectUri ? 'Copied!' : 'Copy Redirect URI'}</span>
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-amber-900/80 leading-relaxed">
+                      To prevent <code className="font-mono font-bold bg-amber-100 px-1 py-0.5 rounded text-amber-900">redirect_uri_mismatch</code> errors when signing in with Google, you must register this exact URI in your Google Cloud Console:
+                    </p>
+
+                    <div className="p-2 bg-white border border-amber-200/80 rounded-xl font-mono text-xs text-amber-900 break-all flex items-center justify-between select-all">
+                      <span>{window.location.origin}/auth/callback</span>
+                    </div>
+
+                    <div className="text-[10.5px] text-wood-600 space-y-1 pt-1">
+                      <p className="font-semibold text-wood-800">Quick Steps in Google Cloud Console:</p>
+                      <ol className="list-decimal list-inside space-y-0.5 text-wood-600 pl-1">
+                        <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-amber-700 underline font-semibold inline-flex items-center gap-0.5">Google Cloud Credentials <ExternalLink size={10} /></a></li>
+                        <li>Click on your OAuth 2.0 Web Client ID to edit it</li>
+                        <li>Under <strong>Authorized redirect URIs</strong>, click <strong>+ Add URI</strong></li>
+                        <li>Paste <code className="font-mono font-bold text-amber-900">{window.location.origin}/auth/callback</code> and click <strong>Save</strong></li>
+                      </ol>
+                    </div>
+                  </div>
                 </div>
 
                 {saveMessage && (

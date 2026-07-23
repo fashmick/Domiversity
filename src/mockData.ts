@@ -287,6 +287,24 @@ export const INITIAL_BOOKINGS: Booking[] = [
     createdAt: '2026-07-10T14:30:00Z',
     moveInDate: '2026-07-20',
     inspectorJobId: 'job_1'
+  },
+  {
+    id: 'booking_demo_refund',
+    hostelId: 'hostel_2',
+    hostelName: 'Lagoon View Villa',
+    hostelPhoto: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=400',
+    landlordId: 'landlord_2',
+    landlordName: 'Alhaji Ibrahim Dantata',
+    studentId: 'student_1',
+    studentName: 'Ayomide Fashina',
+    studentPhone: '08123456789',
+    price: 450000,
+    status: 'REFUNDED',
+    createdAt: '2026-07-15T09:30:00Z',
+    moveInDate: '2026-07-25',
+    cancelReason: 'Borehole water supply was broken during physical inspection and room size differed from listing photos.',
+    refundInitiatedAt: '2026-07-16T11:20:00Z',
+    refundStage: 'PAYSTACK_PROCESSING'
   }
 ];
 

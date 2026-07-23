@@ -94,6 +94,9 @@ export interface Booking {
   disputeResolutionNotes?: string;
   inspectorJobId?: string;
   inspectionChoice?: 'SELF' | 'ROOMLY';
+  cancelReason?: string;
+  refundInitiatedAt?: string;
+  refundStage?: 'INITIATED' | 'ESCROW_REVERSED' | 'PAYSTACK_PROCESSING' | 'CREDITED';
 }
 
 export type JobStatus = 'UNASSIGNED' | 'ASSIGNED' | 'COMPLETED';
