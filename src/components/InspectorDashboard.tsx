@@ -177,6 +177,12 @@ export default function InspectorDashboard({
     e.preventDefault();
     if (!reportingJobId || !notes.trim()) return;
 
+    const wordCount = notes.trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount < 10) {
+      alert(`Description too short: Audit notes must contain at least 10 words (currently ${wordCount} words). Please describe water, power, security, and physical findings.`);
+      return;
+    }
+
     onSubmitReport(reportingJobId, {
       waterStatus: water,
       powerStatus: power,
@@ -203,64 +209,63 @@ export default function InspectorDashboard({
         {activeInspector.kycStatus === 'NOT_SUBMITTED' || activeInspector.kycStatus === 'REJECTED' ? (
           <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-wood-200/80 p-8 shadow-md">
             <div className="text-center mb-8">
-              <div className="bg-amber-100 text-amber-700 p-3 rounded-2xl w-fit mx-auto mb-4">
+              <div className="bg-emerald-100 text-emerald-800 p-3 rounded-2xl w-fit mx-auto mb-4">
                 <ShieldAlert size={32} />
               </div>
-              <h2 className="font-display font-bold text-2xl text-wood-950">Inspector Certification Gate</h2>
+              <h2 className="font-display font-bold text-2xl text-wood-950">Inspector Instant Verification</h2>
               <p className="text-xs text-wood-500 mt-2 max-w-md mx-auto leading-relaxed">
-                Join our trusted vetting network. Verify your campus enrollment (Student ID Card) and add banking details to receive your ₦4,500 inspection fees.
+                Join our trusted physical inspector network. Verify your Government ID and enter your bank details for instant approval and immediate job assignments.
               </p>
               {activeInspector.kycStatus === 'REJECTED' && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left max-w-md mx-auto mt-4 text-xs">
-                  <p className="font-bold text-red-800">Verification Rejected by Admin:</p>
-                  <p className="text-red-700 mt-0.5">{activeInspector.kycDetails?.rejectionReason || 'Uploaded student card matches an expired date or invalid matric number.'}</p>
+                  <p className="font-bold text-red-800">Previous Submission Note:</p>
+                  <p className="text-red-700 mt-0.5">{activeInspector.kycDetails?.rejectionReason || 'Please verify your Government ID number and bank account name.'}</p>
                 </div>
               )}
             </div>
 
             <form onSubmit={handleOnboardSubmit} className="space-y-6 text-xs text-wood-700">
               <div className="bg-wood-50 p-4 rounded-2xl border border-wood-100">
-                <h3 className="font-bold text-sm text-wood-950 mb-4">1. Campus Verification Documents</h3>
+                <h3 className="font-bold text-sm text-wood-950 mb-4 flex items-center gap-2">
+                  <User size={16} className="text-wood-600" />
+                  <span>1. Government ID Verification</span>
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold mb-1.5">Enrollment ID Type</label>
+                    <label className="block font-bold mb-1.5">Government ID Type *</label>
                     <CustomSelect
                       value={idType}
                       onChange={(val) => setIdType(val)}
                       options={[
-                        { value: 'Student ID Card', label: 'Campus Student ID Card' },
-                        { value: 'School Portal Registration PDF', label: 'School Portal Registration PDF' },
-                        { value: 'National Identity Card (NIN)', label: 'National ID Card (NIN)' }
+                        { value: 'National Identity Card (NIN)', label: 'National Identity Card (NIN)' },
+                        { value: 'Voter\'s Card', label: 'Voter\'s Card (VIN)' },
+                        { value: 'Driver\'s License', label: 'Driver\'s License' },
+                        { value: 'International Passport', label: 'International Passport' }
                       ]}
                     />
                   </div>
                   <div>
-                    <label className="block font-bold mb-1.5">Matric / Card Registration Number</label>
+                    <label className="block font-bold mb-1.5">Government ID Number *</label>
                     <input
                       type="text"
                       value={idNum}
                       onChange={(e) => setIdNum(e.target.value)}
-                      placeholder="E.g., 180902120 or NIN-92834789012"
-                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
+                      placeholder="E.g. NIN 90812345678 or VIN 90F7B8C241"
+                      className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden font-mono"
                       required
                     />
-                  </div>
-                </div>
-                
-                <div className="mt-4">
-                  <label className="block font-bold mb-1.5">Upload Clear ID Document Photo (Simulated)</label>
-                  <div className="border border-dashed border-wood-300 rounded-xl bg-white p-6 text-center cursor-pointer">
-                    <FileText size={24} className="text-wood-400 mx-auto mb-1.5" />
-                    <span className="font-semibold block text-[11px] text-wood-600">Click to upload JPG / PDF of ID</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-wood-50 p-4 rounded-2xl border border-wood-100">
-                <h3 className="font-bold text-sm text-wood-950 mb-4">2. Bank Payout Coordinates</h3>
+                <h3 className="font-bold text-sm text-wood-950 mb-4 flex items-center gap-2">
+                  <DollarSign size={16} className="text-emerald-600" />
+                  <span>2. Bank Account Details (For ₦4,500 Payouts)</span>
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-bold mb-1.5">Bank Name</label>
+                    <label className="block font-bold mb-1.5">Bank Name *</label>
                     <CustomSelect
                       value={bankName}
                       onChange={(val) => setBankName(val)}
@@ -268,24 +273,24 @@ export default function InspectorDashboard({
                     />
                   </div>
                   <div>
-                    <label className="block font-bold mb-1.5">10-Digit Bank Account Number</label>
+                    <label className="block font-bold mb-1.5">10-Digit Account Number *</label>
                     <input
                       type="text"
                       maxLength={10}
                       value={accountNum}
                       onChange={(e) => setAccountNum(e.target.value)}
-                      placeholder="E.g., 2112233445"
+                      placeholder="E.g. 2112233445"
                       className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden font-mono"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block font-bold mb-1.5">Payout Account Holder Name</label>
+                    <label className="block font-bold mb-1.5">Account Holder Name *</label>
                     <input
                       type="text"
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
-                      placeholder="E.g., Tunde Alao"
+                      placeholder="E.g. Tunde Alao"
                       className="w-full bg-white border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden"
                       required
                     />
@@ -295,25 +300,12 @@ export default function InspectorDashboard({
 
               <button
                 type="submit"
-                className="w-full py-3 bg-wood-600 hover:bg-wood-700 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
+                className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer flex items-center justify-center space-x-2"
               >
-                Submit Inspector Verification Credentials
+                <CheckCircle2 size={18} />
+                <span>Verify ID & Activate Inspector Account</span>
               </button>
             </form>
-          </div>
-        ) : activeInspector.kycStatus === 'PENDING' ? (
-          <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-wood-200 p-8 shadow-xs text-center space-y-6">
-            <div className="bg-amber-100 text-amber-700 p-3 rounded-full w-fit mx-auto mb-4 animate-bounce">
-              <Clock size={32} />
-            </div>
-            <h2 className="font-display font-bold text-xl text-wood-950">Documents Under Admin Vetting</h2>
-            <p className="text-sm text-wood-600 leading-relaxed max-w-md mx-auto">
-              Your inspector application is currently **PENDING** review. Administrators are matching your Student ID card with our target pilots.
-            </p>
-            <div className="bg-wood-50 p-4 rounded-2xl border border-wood-100 inline-block text-left text-xs max-w-sm">
-              <p className="font-bold text-wood-950">How to bypass in this Demo:</p>
-              <p className="text-wood-600 mt-1">Switch to the **ADMIN** portal using the top navbar. You can approve this inspector profile in one-click from there!</p>
-            </div>
           </div>
         ) : (
           /* APPROVED INSPECTOR WORKSPACE */
@@ -326,7 +318,7 @@ export default function InspectorDashboard({
                   <ClipboardCheck size={14} />
                   <span>Verified Roomly Inspector</span>
                 </span>
-                <h1 className="font-display font-bold text-xl sm:text-2xl text-wood-950 mt-1">Vetting Arena: {activeInspector.name}</h1>
+                <h1 className="font-display font-bold text-xl sm:text-2xl text-wood-950 mt-1">Hello, {activeInspector.name}!</h1>
                 <p className="text-xs text-wood-600">Assigned Campus: **{inspectorSchool?.name || 'Local Pilot'}**</p>
               </div>
 
@@ -503,11 +495,20 @@ export default function InspectorDashboard({
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="sm:col-span-2">
-                              <label className="block font-bold mb-1.5">Physically Verified Audit Notes</label>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block font-bold">Physically Verified Audit Notes *</label>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  notes.trim().split(/\s+/).filter(Boolean).length >= 10
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                }`}>
+                                  {notes.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                                </span>
+                              </div>
                               <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="E.g., I checked the room 4 on Saint Finbarrs Road. Tested the borehole. Water was clean but slight rust smell. Landlord has solar panels. Gated wall is intact..."
+                                placeholder="E.g., I checked room 4 on Saint Finbarrs Road. Tested borehole water. Water was clean but slight rust smell. Landlord has solar panels (minimum 10 words)..."
                                 className="w-full bg-white border border-wood-200 rounded-xl p-3 text-xs outline-hidden focus:ring-1 focus:ring-wood-500"
                                 rows={3}
                                 required
@@ -608,6 +609,30 @@ export default function InspectorDashboard({
                       onChange={(e) => setProfileName(e.target.value)}
                       className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-wood-700 mb-1">Phone Number (NGR)</label>
+                      <input
+                        type="tel"
+                        required
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-wood-700 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        value={profileEmail}
+                        onChange={(e) => setProfileEmail(e.target.value)}
+                        className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                      />
+                    </div>
                   </div>
 
                   <div>

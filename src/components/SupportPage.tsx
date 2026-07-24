@@ -5,6 +5,7 @@ import FaqSection from './FaqSection';
 
 interface SupportPageProps {
   activeUser: User;
+  isLoggedIn?: boolean;
   onNavigate?: (tab: string) => void;
 }
 
@@ -23,7 +24,7 @@ export interface Ticket {
 const APP_KEYWORDS = [
   'hostel', 'room', 'rent', 'escrow', 'booking', 'refund', 'cancel', 'roommate', 
   'cohabitant', 'inspector', 'inspection', 'landlord', 'listing', 'verify', 'kyc', 
-  'complaint', 'ticket', 'faq', 'support', 'profile', 'message', 'chat', 'login', 
+  'complaint', 'complain', 'issue', 'issues', 'dispute', 'ticket', 'faq', 'support', 'profile', 'message', 'chat', 'login', 
   'account', 'fee', 'payment', 'bank', 'paystack', 'scam', 'report', 'dispute', 
   'dormiversity', 'dorm', 'school', 'university', 'campus', 'bookmark', 'saved', 'payout'
 ];
@@ -38,6 +39,9 @@ const PAGE_MAPPINGS: Record<string, { label: string; tab: string }> = {
   'ai support & complaints': { label: 'AI Support & Complaints', tab: 'support' },
   'help & faqs': { label: 'Help & FAQs', tab: 'faqs' },
   'profile & settings': { label: 'Profile & Settings', tab: 'profile' },
+  'profile': { label: 'Profile & Settings', tab: 'profile' },
+  'navigation menu': { label: 'Navigation Menu (Top Right)', tab: 'profile' },
+  'menu bar': { label: 'Navigation Menu (Top Right)', tab: 'profile' },
 };
 
 function RenderMessageContent({ text, onNavigate }: { text: string; onNavigate?: (tab: string) => void }) {
@@ -58,10 +62,10 @@ function RenderMessageContent({ text, onNavigate }: { text: string; onNavigate?:
                 key={idx}
                 type="button"
                 onClick={() => onNavigate && onNavigate(match.tab)}
-                className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 border border-amber-400 px-2 py-0.5 rounded-md mx-1 text-[11px] cursor-pointer transition-all shadow-2xs"
+                className="inline-flex items-center space-x-1 font-bold text-wood-950 hover:text-black hover:underline bg-wood-100 hover:bg-wood-200 border border-wood-300 px-2 py-0.5 rounded-md mx-1 text-[11px] cursor-pointer transition-colors shadow-2xs"
               >
                 <span>{match.label}</span>
-                <ExternalLink size={10} />
+                <ExternalLink size={10} className="text-wood-600" />
               </button>
             );
           }
@@ -72,7 +76,7 @@ function RenderMessageContent({ text, onNavigate }: { text: string; onNavigate?:
   );
 }
 
-export default function SupportPage({ activeUser, onNavigate }: SupportPageProps) {
+export default function SupportPage({ activeUser, isLoggedIn = true, onNavigate }: SupportPageProps) {
   const [activeTab, setActiveTab] = useState<'TICKETS' | 'AI_CHAT' | 'FAQS'>('TICKETS');
   
   // Ticket form state
@@ -83,18 +87,46 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [submittedSuccess, setSubmittedSuccess] = useState<Ticket | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Embedded AI Chat State
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender: 'BOT' | 'USER'; text: string; time: string; ticketId?: string }>>([
-    {
-      id: 'm_welcome',
-      sender: 'BOT',
-      text: `Hello ${activeUser.name || 'there'}! 👋 Welcome to the 24/7 Dormiversity AI Support Center.\n\nI am configured strictly to assist you with Dormiversity features like [Hostel Directory], [My Bookings], [Roommate Finder], [Saved Hostels], [Help & FAQs], and [AI Support & Complaints].\n\nHow can I help you today?`,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; sender: 'BOT' | 'USER'; text: string; time: string; ticketId?: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
+
+  // Helper function to count words
+  const countWords = (str: string) => str.trim().split(/\s+/).filter(Boolean).length;
+
+  // Load account-scoped AI chat history
+  useEffect(() => {
+    if (activeUser?.id) {
+      const stored = localStorage.getItem(`dorm_chat_history_${activeUser.id}`);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setChatMessages(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
+      setChatMessages([
+        {
+          id: 'm_welcome',
+          sender: 'BOT',
+          text: `Hello ${activeUser.name || 'there'}! 👋 Welcome to the 24/7 Dormiversity AI Support Center.\n\nI am here to help you navigate and understand the Dormiversity platform. What would you like to know or find today?`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    }
+  }, [activeUser?.id, activeUser?.name]);
+
+  // Auto-save AI chat messages for activeUser
+  useEffect(() => {
+    if (activeUser?.id && chatMessages.length > 0) {
+      localStorage.setItem(`dorm_chat_history_${activeUser.id}`, JSON.stringify(chatMessages));
+    }
+  }, [chatMessages, activeUser?.id]);
 
   // Load existing tickets from localStorage
   useEffect(() => {
@@ -131,6 +163,12 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
       return;
     }
 
+    const detailsWords = countWords(details);
+    if (detailsWords < 10) {
+      alert(`Description too short: Complaint description must be at least 10 words long (currently ${detailsWords} words). Please provide more context.`);
+      return;
+    }
+
     setIsSubmitting(true);
 
     setTimeout(() => {
@@ -156,6 +194,7 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
 
       setIsSubmitting(false);
       setSubmittedSuccess(newTicket);
+      setShowSuccessModal(true);
       setSubject('');
       setDetails('');
       setProofUrl('');
@@ -163,6 +202,10 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
   };
 
   const handleSendChatMessage = (textToSubmit?: string) => {
+    if (isLoggedIn === false) {
+      alert("You must be logged in to send messages to the AI Support Assistant. Please sign in first.");
+      return;
+    }
     const msgText = textToSubmit || chatInput;
     if (!msgText.trim()) return;
 
@@ -186,22 +229,28 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
       const isAppTopic = APP_KEYWORDS.some(k => lower.includes(k));
 
       if (!isAppTopic) {
-        reply = "I am Dormiversity's dedicated 24/7 AI Support Assistant. I am specialized strictly to answer questions and assist with the Dormiversity application (Hostel Search, Bookings, Rent Escrow, Roommates, Landlord Verification, and Complaint Tickets).\n\nPlease ask me a question about our app features, or navigate directly using [Hostel Directory], [My Bookings], [Roommate Finder], or [Help & FAQs].";
+        reply = "I am Dormiversity's dedicated 24/7 AI Support Assistant. I only answer messages and questions related to the Dormiversity application.";
+      } else if (lower.includes('complain') || lower.includes('complaint') || lower.includes('issue') || lower.includes('dispute') || lower.includes('ticket') || lower.includes('problem')) {
+        reply = "To make or view complaints, you can file an issue ticket directly or track existing ones on [AI Support & Complaints].";
+      } else if (lower.includes('profile') || lower.includes('setting') || lower.includes('account')) {
+        reply = "To access your profile and settings, you can open the [Navigation Menu] at the top right of the navigation bar, or click directly on [Profile & Settings].";
       } else if (lower.includes('refund') || lower.includes('cancel') || lower.includes('money')) {
-        reply = "To request an immediate refund: Go to [My Bookings] page. Click 'Request Refund' on your booking card, enter your 10-digit bank account number and bank name for automated verification. Funds will revert to your bank account.";
-      } else if (lower.includes('roommate') || lower.includes('cohabitant')) {
-        reply = "Looking for compatible flatmates? Visit [Roommate Finder] to browse verified students matching your department, budget, and lifestyle preferences.";
+        reply = "For hostel refunds: Open [My Bookings], click 'Request Refund' on your booking card, and provide your bank details for name verification.";
+      } else if (lower.includes('roommate') || lower.includes('flatmate') || lower.includes('cohabitant')) {
+        reply = "Looking for compatible flatmates? You can browse verified students on [Roommate Finder].";
       } else if (lower.includes('save') || lower.includes('bookmark') || lower.includes('favorite')) {
-        reply = "You can review all your saved hostel listings on your [Saved Hostels] page.";
+        reply = "You can view all your saved hostels under [Saved Hostels].";
       } else if (lower.includes('report') || lower.includes('scam') || lower.includes('fake')) {
-        reply = "To report a fake listing: Open [Hostel Directory], click the red 'Report Hostel' flag button on the hostel card, select the category, and submit. You can also track filed complaints in [AI Support & Complaints].";
+        reply = "To report a suspicious hostel listing: Find it in [Hostel Directory], click the red 'Report Hostel' flag, or log a complaint ticket in [AI Support & Complaints].";
+      } else if (lower.includes('kyc') || lower.includes('verification') || lower.includes('nin') || lower.includes('landlord')) {
+        reply = "Landlords can submit identity and property verification details under [Verification Status].";
+      } else if (lower.includes('payout') || lower.includes('bank') || lower.includes('withdraw')) {
+        reply = "You can manage your bank account details and view payout history on [Payout History].";
       } else if (lower.includes('faq') || lower.includes('question') || lower.includes('help')) {
-        reply = "Browse our comprehensive list of verified platform guides and answers under [Help & FAQs].";
-      } else if (lower.includes('complaint') || lower.includes('dispute') || lower.includes('ticket')) {
-        ticketId = 'TICK-' + Math.floor(10000 + Math.random() * 90000);
-        reply = `I have logged an official support complaint for you under Ticket ID ${ticketId} (Unique User ID: ${activeUser.id}). Our Support Desk at 08109211130 will investigate and respond within 24 hours.`;
+        reply = "You can read answers to common platform questions under [Help & FAQs].";
       } else {
-        reply = `Thank you for reaching out! You can manage your account in [Profile & Settings], check your bookings in [My Bookings], or submit a formal ticket in [AI Support & Complaints]. All submitted issues are forwarded to 08109211130 with your Unique User ID: ${activeUser.id}.`;
+        ticketId = 'TICK-' + Math.floor(10000 + Math.random() * 90000);
+        reply = `Your request has been logged under Support Ticket ID: ${ticketId} and dispatched to 08109211130. You can track complaints in [AI Support & Complaints].`;
       }
 
       setChatMessages(prev => [
@@ -251,7 +300,7 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
             }`}
           >
             <FileText size={15} />
-            <span>File & View Complaints ({tickets.length})</span>
+            <span>File & View Complaints</span>
           </button>
 
           <button
@@ -282,10 +331,10 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
 
       {/* TAB 1: FORMAL COMPLAINT TICKETS */}
       {activeTab === 'TICKETS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="max-w-3xl mx-auto space-y-6">
           
-          {/* Submit New Ticket Form (Left 2 cols) */}
-          <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-3xl border border-wood-200/80 shadow-xs space-y-6">
+          {/* Submit New Ticket Form */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-wood-200/80 shadow-xs space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-wood-150 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-wood-950 flex items-center space-x-2">
@@ -302,37 +351,6 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
                 <span className="font-mono font-extrabold text-amber-950 text-xs">{activeUser.id}</span>
               </div>
             </div>
-
-            {submittedSuccess && (
-              <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 text-xs space-y-2 animate-fadeIn">
-                <div className="flex items-start space-x-3">
-                  <CheckCircle2 size={20} className="text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <span className="font-extrabold text-emerald-950 block">Complaint Ticket Logged! ID: {submittedSuccess.id}</span>
-                    <p>Dispatched to official line 08109211130 under Unique User ID: <span className="font-mono font-bold text-emerald-950">{submittedSuccess.userId}</span></p>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200 flex flex-wrap gap-2">
-                  <a
-                    href={`https://wa.me/2348109211130?text=${encodeURIComponent(formatTicketPayloadForLine(submittedSuccess))}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-[11px] inline-flex items-center space-x-1 shadow-2xs"
-                  >
-                    <MessageSquare size={13} />
-                    <span>Send Payload to Support Desk (08109211130)</span>
-                  </a>
-                  <a
-                    href={`sms:08109211130?body=${encodeURIComponent(formatTicketPayloadForLine(submittedSuccess))}`}
-                    className="px-3 py-1.5 bg-wood-900 hover:bg-black text-white font-bold rounded-xl text-[11px] inline-flex items-center space-x-1 shadow-2xs"
-                  >
-                    <PhoneCall size={13} />
-                    <span>Send SMS (08109211130)</span>
-                  </a>
-                </div>
-              </div>
-            )}
 
             <form onSubmit={handleSubmitTicket} className="space-y-5 text-xs text-wood-700">
               
@@ -377,11 +395,20 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
 
               {/* Description */}
               <div className="space-y-1.5">
-                <label className="font-bold text-wood-900 text-xs block">Detailed Complaint Description *</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-wood-900 text-xs block">Detailed Complaint Description *</label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                    countWords(details) >= 10
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      : 'bg-amber-100 text-amber-900 border border-amber-300'
+                  }`}>
+                    {countWords(details)} / 10 words min
+                  </span>
+                </div>
                 <textarea
                   rows={4}
                   required
-                  placeholder="Provide full details of your issue, including hostel name, date of payment, or landlord behavior..."
+                  placeholder="Provide full details of your issue, including hostel name, date of payment, or landlord behavior (minimum 10 words)..."
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   className="w-full p-3 bg-wood-50/50 rounded-xl border border-wood-200 text-xs text-wood-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
@@ -389,7 +416,7 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
               </div>
 
               {/* Guarantee banner & Submit */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-4">
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-4 border-t border-wood-150">
                 <div className="flex items-center space-x-2 text-[11px] text-wood-600 font-medium">
                   <Clock size={16} className="text-amber-600 flex-shrink-0" />
                   <span>Complaints sent to 08109211130 with ID: <span className="font-mono font-bold text-wood-900">{activeUser.id}</span></span>
@@ -408,62 +435,64 @@ export default function SupportPage({ activeUser, onNavigate }: SupportPageProps
             </form>
           </div>
 
-          {/* Ticket History Sidebar (Right 1 col) */}
-          <div className="bg-white p-6 rounded-3xl border border-wood-200/80 shadow-xs space-y-4 h-fit">
-            <h3 className="font-bold text-sm text-wood-950 flex items-center justify-between border-b border-wood-100 pb-3">
-              <span>My Ticket Logs</span>
-              <span className="bg-wood-100 text-wood-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {tickets.length} Saved
-              </span>
-            </h3>
+        </div>
+      )}
 
-            {tickets.length === 0 ? (
-              <p className="text-xs text-wood-400 text-center py-6">No complaint tickets logged yet.</p>
-            ) : (
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {tickets.map((t) => (
-                  <div key={t.id} className="p-3.5 bg-wood-50/60 rounded-2xl border border-wood-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                        {t.id}
-                      </span>
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
-                        t.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' :
-                        t.status === 'UNDER_REVIEW' ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-900'
-                      }`}>
-                        {t.status.replace('_', ' ')}
-                      </span>
-                    </div>
+      {/* SUCCESS POPUP MODAL FOR COMPLAINT SUBMISSION */}
+      {showSuccessModal && submittedSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-wood-200 shadow-2xl space-y-5 relative text-center">
+            <div className="w-16 h-16 bg-emerald-100 border border-emerald-300 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
+              <CheckCircle2 size={36} />
+            </div>
 
-                    <h4 className="font-bold text-xs text-wood-900 line-clamp-1">{t.subject}</h4>
-                    <p className="text-[11px] text-wood-600 line-clamp-2">{t.details}</p>
+            <div className="space-y-2">
+              <h3 className="text-xl font-extrabold text-wood-950">
+                Complaint Submitted Successfully!
+              </h3>
+              <p className="text-xs text-wood-600 leading-relaxed">
+                Your complaint has been successfully registered and logged under Ticket ID <span className="font-mono font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded">{submittedSuccess.id}</span>.
+              </p>
+            </div>
 
-                    <div className="pt-1.5 border-t border-wood-200/80 flex items-center justify-between text-[10px] text-wood-500">
-                      <span>User ID: <span className="font-mono font-bold text-wood-800">{t.userId || activeUser.id}</span></span>
-                      <a
-                        href={`https://wa.me/2348109211130?text=${encodeURIComponent(formatTicketPayloadForLine(t))}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-emerald-700 font-bold hover:underline"
-                      >
-                        Send to 08109211130
-                      </a>
-                    </div>
-
-                    {t.response && (
-                      <div className="mt-2 p-2 bg-white rounded-xl border border-wood-200 text-[10px] text-wood-700">
-                        <span className="font-bold text-wood-900 block">Support Desk Update:</span>
-                        <p className="mt-0.5">{t.response}</p>
-                      </div>
-                    )}
-
-                    <span className="text-[9px] text-wood-400 block pt-1">{t.createdAt}</span>
-                  </div>
-                ))}
+            <div className="p-4 bg-wood-50 rounded-2xl border border-wood-200 text-left space-y-2 text-xs text-wood-800">
+              <div className="flex justify-between items-center border-b border-wood-200 pb-2">
+                <span className="font-bold text-wood-600">Unique User ID:</span>
+                <span className="font-mono font-bold text-wood-950">{submittedSuccess.userId}</span>
               </div>
-            )}
-          </div>
+              <div className="flex justify-between items-center border-b border-wood-200 pb-2">
+                <span className="font-bold text-wood-600">Category:</span>
+                <span className="font-semibold text-wood-900">{submittedSuccess.category.replace('_', ' ')}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-wood-600">Dispatch Status:</span>
+                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Dispatched to 08109211130</span>
+              </div>
+            </div>
 
+            <p className="text-[11px] text-wood-500 italic">
+              Our 24/7 Support Desk will review your details and contact you within 24 hours.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <a
+                href={`https://wa.me/2348109211130?text=${encodeURIComponent(formatTicketPayloadForLine(submittedSuccess))}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs"
+              >
+                <MessageSquare size={14} />
+                <span>Send via WhatsApp</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="flex-1 py-3 bg-wood-900 hover:bg-black text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

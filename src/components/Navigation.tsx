@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings, Compass, Users, Bookmark, CreditCard, ShieldCheck, Bot, HelpCircle } from 'lucide-react';
+import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings, Compass, Users, Bookmark, CreditCard, ShieldCheck, Bot, HelpCircle, Receipt, Camera } from 'lucide-react';
 import { User, UserRole } from '../types';
 import DormiversityLogo from './DormiversityLogo';
 
@@ -198,7 +198,7 @@ export default function Navigation({
                       : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
                   }`}
                 >
-                  <Settings size={16} className={activeTab === 'bookings' ? 'text-wood-900' : 'text-wood-500'} />
+                  <Receipt size={16} className={activeTab === 'bookings' ? 'text-wood-900' : 'text-wood-500'} />
                   <span>My Bookings</span>
                 </button>
 
@@ -379,6 +379,23 @@ export default function Navigation({
                 <HelpCircle size={16} className={activeTab === 'faqs' ? 'text-amber-600' : 'text-wood-500'} />
                 <span>Help & FAQs Page</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => { onNavigate('media-gallery'); setDrawerOpen(false); }}
+              className={`w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                activeTab === 'media-gallery'
+                  ? 'bg-wood-100 text-wood-950 shadow-xs'
+                  : 'text-wood-600 hover:text-wood-950 hover:bg-wood-50/70'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Camera size={16} className={activeTab === 'media-gallery' ? 'text-amber-600' : 'text-wood-500'} />
+                <span>Inspected Media Gallery</span>
+              </div>
+              <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded uppercase">
+                Vetted
+              </span>
             </button>
 
             <button

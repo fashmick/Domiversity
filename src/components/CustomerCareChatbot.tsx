@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User as UserIcon, Shield, Sparkles, ExternalLink, PhoneCall, CheckCircle2, AlertCircle, Clock, RefreshCw } from 'lucide-react';
 
+import { User } from '../types';
+
 export interface ChatMessage {
   id: string;
   sender: 'BOT' | 'USER';
@@ -10,13 +12,16 @@ export interface ChatMessage {
 }
 
 interface CustomerCareChatbotProps {
+  activeUser?: User;
+  isLoggedIn?: boolean;
   onNavigate?: (tab: string) => void;
+  onOpenSignIn?: () => void;
 }
 
 const APP_KEYWORDS = [
   'hostel', 'room', 'rent', 'escrow', 'booking', 'refund', 'cancel', 'roommate', 
   'cohabitant', 'inspector', 'inspection', 'landlord', 'listing', 'verify', 'kyc', 
-  'complaint', 'ticket', 'faq', 'support', 'profile', 'message', 'chat', 'login', 
+  'complaint', 'complain', 'issue', 'issues', 'dispute', 'ticket', 'faq', 'support', 'profile', 'message', 'chat', 'login', 
   'account', 'fee', 'payment', 'bank', 'paystack', 'scam', 'report', 'dispute', 
   'dormiversity', 'dorm', 'school', 'university', 'campus', 'bookmark', 'saved', 'payout'
 ];
@@ -31,6 +36,9 @@ const PAGE_MAPPINGS: Record<string, { label: string; tab: string }> = {
   'ai support & complaints': { label: 'AI Support & Complaints', tab: 'support' },
   'help & faqs': { label: 'Help & FAQs', tab: 'faqs' },
   'profile & settings': { label: 'Profile & Settings', tab: 'profile' },
+  'profile': { label: 'Profile & Settings', tab: 'profile' },
+  'navigation menu': { label: 'Navigation Menu (Top Right)', tab: 'profile' },
+  'menu bar': { label: 'Navigation Menu (Top Right)', tab: 'profile' },
 };
 
 function RenderChatMessage({ text, onNavigate }: { text: string; onNavigate?: (tab: string) => void }) {
@@ -50,10 +58,10 @@ function RenderChatMessage({ text, onNavigate }: { text: string; onNavigate?: (t
                 key={idx}
                 type="button"
                 onClick={() => onNavigate && onNavigate(match.tab)}
-                className="inline-flex items-center space-x-1 font-bold text-amber-900 bg-amber-200/90 hover:bg-amber-300 border border-amber-400 px-2 py-0.5 rounded-md mx-1 text-[10px] cursor-pointer transition-all shadow-2xs"
+                className="inline-flex items-center space-x-1 font-bold text-wood-950 hover:text-black hover:underline bg-wood-100 hover:bg-wood-200 border border-wood-300 px-2 py-0.5 rounded-md mx-1 text-[11px] cursor-pointer transition-colors shadow-2xs"
               >
                 <span>{match.label}</span>
-                <ExternalLink size={10} />
+                <ExternalLink size={10} className="text-wood-600" />
               </button>
             );
           }
@@ -64,19 +72,53 @@ function RenderChatMessage({ text, onNavigate }: { text: string; onNavigate?: (t
   );
 }
 
-export default function CustomerCareChatbot({ onNavigate }: CustomerCareChatbotProps) {
+export default function CustomerCareChatbot({ activeUser, isLoggedIn, onNavigate, onOpenSignIn }: CustomerCareChatbotProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'm_welcome',
-      sender: 'BOT',
-      text: "Hello! 👋 I'm your 24/7 Dormiversity AI Support Assistant.\n\nI answer questions about Dormiversity app features! You can jump directly to pages like [Hostel Directory], [My Bookings], [Roommate Finder], [Help & FAQs], or [AI Support & Complaints]. How can I assist you?",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync / Load account-scoped chat history
+  useEffect(() => {
+    if (isLoggedIn && activeUser?.id) {
+      const key = `dorm_chat_history_${activeUser.id}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+            return;
+          }
+        } catch (e) {}
+      }
+      setMessages([
+        {
+          id: 'm_welcome',
+          sender: 'BOT',
+          text: `Hello ${activeUser.name || 'there'}! 👋 Welcome to the 24/7 Dormiversity AI Support Assistant.\n\nI am here to help you navigate and understand the Dormiversity platform. What would you like to know or find today?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } else {
+      setMessages([
+        {
+          id: 'm_welcome_guest',
+          sender: 'BOT',
+          text: "Hello! 👋 Welcome to Dormiversity 24/7 Support. Please sign in to send messages and save your chat history with our AI Support Assistant.",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    }
+  }, [activeUser?.id, isLoggedIn]);
+
+  // Auto-save chat history for active user
+  useEffect(() => {
+    if (isLoggedIn && activeUser?.id && messages.length > 0) {
+      localStorage.setItem(`dorm_chat_history_${activeUser.id}`, JSON.stringify(messages));
+    }
+  }, [messages, activeUser?.id, isLoggedIn]);
 
   // Position state for movable floating button
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -142,6 +184,12 @@ export default function CustomerCareChatbot({ onNavigate }: CustomerCareChatbotP
   }, [isDragging]);
 
   const handleSendMessage = (customText?: string) => {
+    if (!isLoggedIn || !activeUser) {
+      alert("You must be logged in to send messages to the AI Support Assistant. Please sign in first.");
+      if (onOpenSignIn) onOpenSignIn();
+      return;
+    }
+
     const query = customText || inputText;
     if (!query.trim()) return;
 
@@ -165,20 +213,28 @@ export default function CustomerCareChatbot({ onNavigate }: CustomerCareChatbotP
       const isAppTopic = APP_KEYWORDS.some(k => lower.includes(k));
 
       if (!isAppTopic) {
-        botResponse = "I am Dormiversity's dedicated 24/7 AI Support Assistant. I am configured strictly to assist with questions regarding the Dormiversity application.\n\nPlease ask me about app features like [Hostel Directory], [My Bookings], [Roommate Finder], [Help & FAQs], or [AI Support & Complaints].";
+        botResponse = "I am Dormiversity's dedicated 24/7 AI Support Assistant. I only answer messages and questions related to the Dormiversity application.";
+      } else if (lower.includes('complain') || lower.includes('complaint') || lower.includes('issue') || lower.includes('dispute') || lower.includes('ticket') || lower.includes('problem')) {
+        botResponse = "To make or view complaints, you can file an issue ticket directly or track existing ones on [AI Support & Complaints].";
+      } else if (lower.includes('profile') || lower.includes('setting') || lower.includes('account')) {
+        botResponse = "To access your profile and settings, you can open the [Navigation Menu] at the top right of the navigation bar, or click directly on [Profile & Settings].";
       } else if (lower.includes('refund') || lower.includes('money') || lower.includes('cancel')) {
-        botResponse = "For hostel refunds: Open [My Bookings]. Click 'Request Refund' on your booking card, provide your bank account details for automated name verification. Escrow funds revert directly.";
-      } else if (lower.includes('roommate')) {
-        botResponse = "Looking for compatible flatmates? Browse verified students on [Roommate Finder].";
+        botResponse = "For hostel refunds: Open [My Bookings], click 'Request Refund' on your booking card, and provide your bank details for name verification.";
+      } else if (lower.includes('roommate') || lower.includes('flatmate') || lower.includes('cohabitant')) {
+        botResponse = "Looking for compatible flatmates? You can browse verified students on [Roommate Finder].";
+      } else if (lower.includes('save') || lower.includes('bookmark') || lower.includes('favorite')) {
+        botResponse = "You can view all your saved hostels under [Saved Hostels].";
       } else if (lower.includes('report') || lower.includes('scam') || lower.includes('fake')) {
-        botResponse = "To report a suspicious hostel: Find it in [Hostel Directory], click the red 'Report Hostel' flag, and select the issue. You can track complaints in [AI Support & Complaints].";
+        botResponse = "To report a suspicious hostel listing: Find it in [Hostel Directory], click the red 'Report Hostel' flag, or log a complaint ticket in [AI Support & Complaints].";
       } else if (lower.includes('kyc') || lower.includes('verification') || lower.includes('nin') || lower.includes('landlord')) {
-        botResponse = "Landlords must submit a valid National ID and ownership proof under [Verification Status].";
+        botResponse = "Landlords can submit identity and property verification details under [Verification Status].";
+      } else if (lower.includes('payout') || lower.includes('bank') || lower.includes('withdraw')) {
+        botResponse = "You can manage your bank account details and view payout history on [Payout History].";
       } else if (lower.includes('faq') || lower.includes('help')) {
-        botResponse = "You can read answers to all platform questions on [Help & FAQs].";
+        botResponse = "You can read answers to common platform questions under [Help & FAQs].";
       } else {
         ticketId = 'TICK-' + Math.floor(10000 + Math.random() * 90000);
-        botResponse = `Your complaint has been logged under Support Ticket ID: ${ticketId} and dispatched to 08109211130.\n\nOur Customer Care team will review it within 24 hours. You can track it in [AI Support & Complaints].`;
+        botResponse = `Your request has been logged under Support Ticket ID: ${ticketId} and dispatched to 08109211130. You can track complaints in [AI Support & Complaints].`;
       }
 
       const botMsg: ChatMessage = {
@@ -332,30 +388,52 @@ export default function CustomerCareChatbot({ onNavigate }: CustomerCareChatbotP
             <div ref={messagesEndRef} />
           </div>
 
-          {/* INPUT FORM */}
+          {/* INPUT FORM OR LOGIN PROMPT */}
           <div className="p-3 bg-white border-t border-wood-200">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex items-center space-x-2"
-            >
-              <input
-                type="text"
-                placeholder="Type your question or complaint..."
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                className="flex-1 p-2.5 bg-wood-50 rounded-xl border border-wood-200 text-xs text-wood-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
-              <button
-                type="submit"
-                disabled={!inputText.trim()}
-                className="p-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center"
+            {isLoggedIn && activeUser ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="flex items-center space-x-2"
               >
-                <Send size={16} />
-              </button>
-            </form>
+                <input
+                  type="text"
+                  placeholder="Type your question or complaint..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  className="flex-1 p-2.5 bg-wood-50 rounded-xl border border-wood-200 text-xs text-wood-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!inputText.trim()}
+                  className="p-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center"
+                >
+                  <Send size={16} />
+                </button>
+              </form>
+            ) : (
+              <div className="p-2.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-center space-y-2">
+                <p className="text-[11px] font-extrabold text-amber-950">
+                  🔒 Sign In Required to Chat
+                </p>
+                <p className="text-[10px] text-wood-600 leading-tight">
+                  You cannot send messages until logged into your account.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenSignIn) onOpenSignIn();
+                    else if (onNavigate) onNavigate('signin');
+                    else window.history.pushState({}, '', '/signin');
+                  }}
+                  className="w-full py-2 bg-wood-950 hover:bg-black text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+                >
+                  Sign In / Register Account
+                </button>
+              </div>
+            )}
             <p className="text-[9px] text-wood-500 font-medium text-center mt-1.5">
               Support Desk Line: 08109211130 • 24-Hour Resolution Guarantee
             </p>

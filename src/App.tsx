@@ -702,9 +702,11 @@ export default function App() {
   // 11. Profile KYC Upgrading
   const handleUploadKYC = (details: any) => {
     setState(prev => {
+      const activeU = prev.users.find(u => u.id === prev.activeUserId);
+      const newStatus: 'APPROVED' | 'PENDING' = activeU?.role === 'INSPECTOR' ? 'APPROVED' : 'PENDING';
       const updatedUsers = prev.users.map(u => 
         u.id === prev.activeUserId 
-          ? { ...u, kycStatus: 'PENDING' as const, kycDetails: details } 
+          ? { ...u, kycStatus: newStatus, kycDetails: details } 
           : u
       );
       
@@ -1071,6 +1073,19 @@ export default function App() {
         <TermsPage onBack={() => {
           window.history.pushState({}, '', '/');
         }} />
+      ) : currentPath === '/faqs' ? (
+        <div className="min-h-screen bg-wood-50 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+          <div className="flex items-center justify-between border-b border-wood-200 pb-4">
+            <button
+              onClick={() => window.history.pushState({}, '', '/')}
+              className="px-4 py-2 bg-white border border-wood-250 hover:bg-wood-100 text-wood-900 font-bold rounded-xl text-xs shadow-xs flex items-center space-x-2 cursor-pointer transition-colors"
+            >
+              <span>← Return to Home</span>
+            </button>
+            <span className="text-xs font-bold text-wood-500 uppercase tracking-widest">Dormiversity Help Center</span>
+          </div>
+          <FaqSection initialCategory="ALL" />
+        </div>
       ) : !isLoggedIn ? (
         currentPath === '/signup' ? (
           <SignUpPage
@@ -1221,7 +1236,12 @@ export default function App() {
       )}
 
       {/* Floating 24/7 AI Customer Support & In-App Chatbot Widget */}
-      <CustomerCareChatbot onNavigate={setActiveTab} />
+      <CustomerCareChatbot 
+        activeUser={activeUser}
+        isLoggedIn={isLoggedIn}
+        onNavigate={setActiveTab}
+        onOpenSignIn={() => window.history.pushState({}, '', '/signin')}
+      />
     </div>
   );
 }

@@ -42,6 +42,24 @@ export const FAQ_DATA: FAQItem[] = [
     question: 'How can I report a suspicious or fake hostel listing?',
     answer: 'On every hostel card across the app, click the "Report Hostel" flag button. Select your reason (e.g., false photos, overpriced/scam attempt, damaged facilities, safety concerns). Our Safety & Compliance team will investigate and take down fraudulent listings within 24 hours.'
   },
+  {
+    id: 'faq_s6',
+    category: 'STUDENT',
+    question: 'What if the landlord refuses to hand over keys after I inspect?',
+    answer: 'If a landlord fails or refuses to provide keys after room inspection, do NOT click "Confirm & Release Escrow". Instantly open a dispute ticket or refund request under "My Bookings". Your money remains 100% safe in escrow and will be returned directly to your bank account.'
+  },
+  {
+    id: 'faq_s7',
+    category: 'STUDENT',
+    question: 'Is my personal data (NIN, matriculation number, phone) kept secure?',
+    answer: 'Yes. Dormiversity utilizes bank-grade encryption protocols. Your sensitive credentials and identity documents are used strictly for safety auditing and account protection, and are never shared publicly or sold to third parties.'
+  },
+  {
+    id: 'faq_s8',
+    category: 'STUDENT',
+    question: 'Can I bookmark and save hostels to compare later?',
+    answer: 'Yes! Simply click the Bookmark heart icon on any hostel card to save it. You can review all your saved hostels under "Saved Hostels" in the main navigation menu.'
+  },
 
   // LANDLORD FAQs
   {
@@ -68,6 +86,24 @@ export const FAQ_DATA: FAQItem[] = [
     question: 'Is my draft KYC progress saved if I exit the app?',
     answer: 'Yes! Our multi-step Landlord KYC form features continuous auto-save. You can leave the onboarding form at any step and return anytime without losing your entered ID numbers or document uploads.'
   },
+  {
+    id: 'faq_l5',
+    category: 'LANDLORD',
+    question: 'Can I list multiple properties or different room types under one account?',
+    answer: 'Yes! Landlords can manage multiple hostels, self-contained apartments, or single rooms from their Landlord Dashboard. Each listing can have its own photos, pricing, amenities list, and GPS location.'
+  },
+  {
+    id: 'faq_l6',
+    category: 'LANDLORD',
+    question: 'How do I edit listing details, price, or availability after publishing?',
+    answer: 'Navigate to your Landlord Dashboard under "My Listings". Click "Edit Listing" to update price, room features, or mark a unit as occupied/available.'
+  },
+  {
+    id: 'faq_l7',
+    category: 'LANDLORD',
+    question: 'How does NUBAN bank account verification work for rent withdrawals?',
+    answer: 'When entering your bank payout details in Section 5 of KYC or Payout settings, click "Verify Account". Our system queries the NUBAN resolution service to confirm that your account name matches your registered government name.'
+  },
 
   // INSPECTOR FAQs
   {
@@ -87,6 +123,18 @@ export const FAQ_DATA: FAQItem[] = [
     category: 'INSPECTOR',
     question: 'What protocols must I follow during a room inspection?',
     answer: 'Inspectors must verify water availability (borehole/pipe), test power points and bulb sockets, inspect ceiling condition, check security locks/doors, and take clear timestamped photos of the room interior and exterior.'
+  },
+  {
+    id: 'faq_i4',
+    category: 'INSPECTOR',
+    question: 'What if the landlord refuses entry or premises are locked?',
+    answer: 'If access is denied or the hostel is locked at the scheduled time, mark the job status as "Access Blocked" in your Inspector Portal and upload a brief note. Our admin team will contact the landlord to reschedule or reassign.'
+  },
+  {
+    id: 'faq_i5',
+    category: 'INSPECTOR',
+    question: 'How quickly must I submit the inspection report after visiting?',
+    answer: 'Inspection reports must be submitted within 12 hours of completing the physical site visit so student tenants receive their findings without delay.'
   },
 
   // GENERAL FAQs

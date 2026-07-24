@@ -28,7 +28,13 @@ export default function ReportHostelModal({ isOpen, onClose, hostelId, hostelNam
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!details.trim()) {
-      alert("Please provide a brief description of the issue.");
+      alert("Please provide a description of the issue.");
+      return;
+    }
+
+    const wordCount = details.trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount < 10) {
+      alert(`Description too short: Detailed explanation must contain at least 10 words (currently ${wordCount} words). Please describe what happened in more detail.`);
       return;
     }
 
@@ -151,11 +157,20 @@ export default function ReportHostelModal({ isOpen, onClose, hostelId, hostelNam
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="font-bold text-wood-900 text-xs block">Detailed Explanation *</label>
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-wood-900 text-xs block">Detailed Explanation *</label>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                  details.trim().split(/\s+/).filter(Boolean).length >= 10
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-red-100 text-red-900 border border-red-300'
+                }`}>
+                  {details.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                </span>
+              </div>
               <textarea
                 rows={3}
                 required
-                placeholder="Explain what happened or what is wrong with this listing (e.g., room size is smaller, tap water is dirty, landlord demanded cash)..."
+                placeholder="Explain what happened or what is wrong with this listing (minimum 10 words, e.g. room size is smaller, tap water is dirty)..."
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 className="w-full p-3 bg-white rounded-xl border border-wood-200 text-xs text-wood-900 focus:outline-none focus:ring-2 focus:ring-red-500"

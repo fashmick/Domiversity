@@ -258,6 +258,7 @@ export default function LandlordDashboard({
   const [onboardSchoolApprovalId, setOnboardSchoolApprovalId] = useState(schools[0]?.id || '');
   const [onboardSchoolApprovalStatus, setOnboardSchoolApprovalStatus] = useState<'Approved' | 'Pending' | 'Not Approved'>('Pending');
   const [onboardStep, setOnboardStep] = useState(1);
+  const [kycWizardStep, setKycWizardStep] = useState(1);
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
 
   const [onboardIdFileName, setOnboardIdFileName] = useState('');
@@ -400,6 +401,7 @@ export default function LandlordDashboard({
         const parsed = JSON.parse(savedDraftStr);
         details = { ...details, ...parsed };
         if (parsed.onboardStep) setOnboardStep(parsed.onboardStep);
+        if (parsed.kycWizardStep) setKycWizardStep(parsed.kycWizardStep);
         if (parsed.lastSaved) setLastSavedTime(parsed.lastSaved);
       }
     } catch (e) {
@@ -465,6 +467,7 @@ export default function LandlordDashboard({
       schoolApprovalId: onboardSchoolApprovalId,
       schoolApprovalStatus: onboardSchoolApprovalStatus,
       onboardStep,
+      kycWizardStep,
       lastSaved: nowStr
     };
     try {
@@ -486,7 +489,7 @@ export default function LandlordDashboard({
     onboardAccountNum, onboardAccountName,
     onboardEmergencyContactName, onboardEmergencyContactPhone,
     onboardEmergencyContactRelation, onboardSchoolApprovalId,
-    onboardSchoolApprovalStatus, onboardStep
+    onboardSchoolApprovalStatus, onboardStep, kycWizardStep
   ]);
 
   const handleDetectGps = () => {
@@ -761,6 +764,12 @@ export default function LandlordDashboard({
     }
     if (!newName.trim() || !newAddress.trim()) return;
 
+    const descWords = newDescription.trim().split(/\s+/).filter(Boolean).length;
+    if (descWords < 10) {
+      alert(`Description too short: Detailed description must be at least 10 words long (currently ${descWords} words). Please describe room features, water/electricity condition, and security.`);
+      return;
+    }
+
     onAddListing({
       name: newName,
       price: newPrice,
@@ -815,19 +824,122 @@ export default function LandlordDashboard({
     }
   };
 
+  const validateCurrentKycStep = (step: number): boolean => {
+    if (step === 1) {
+      if (!onboardSchoolApprovalId) {
+        alert("Section 1 Incomplete: Please select your Primary Campus to list under.");
+        return false;
+      }
+      if (!onboardIdType) {
+        alert("Section 1 Incomplete: Please select your Government ID Type.");
+        return false;
+      }
+      if (!onboardIdNum.trim()) {
+        alert("Section 1 Incomplete: Please enter your ID Card Registration Number.");
+        return false;
+      }
+      if (!onboardIdImage) {
+        alert("Section 1 Incomplete: Please upload or capture a photo of your Government Issued ID.");
+        return false;
+      }
+    } else if (step === 2) {
+      if (!onboardProofDocType) {
+        alert("Section 2 Incomplete: Please select your Property Management Authority Document Type.");
+        return false;
+      }
+      if (!onboardProofDocImage) {
+        alert("Section 2 Incomplete: Please upload or capture your Property Ownership / Mandate Document.");
+        return false;
+      }
+      // Check if user filled any optional field in Section 2
+      if (onboardBusinessRegNum.trim() && !onboardBusinessRegImage) {
+        alert("Section 2 Optional Item Incomplete: You entered a CAC Business Reg Number, so you must also upload your CAC Certificate image.");
+        return false;
+      }
+      if (!onboardBusinessRegNum.trim() && onboardBusinessRegImage) {
+        alert("Section 2 Optional Item Incomplete: You uploaded a CAC Certificate image, so you must also enter your CAC Business Reg Number.");
+        return false;
+      }
+      if (onboardBuildingApprovalNum.trim() && !onboardBuildingApprovalImage) {
+        alert("Section 2 Optional Item Incomplete: You entered a Building Approval Number, so you must also upload the Building Approval Certificate image.");
+        return false;
+      }
+      if (!onboardBuildingApprovalNum.trim() && onboardBuildingApprovalImage) {
+        alert("Section 2 Optional Item Incomplete: You uploaded a Building Approval image, so you must also enter the Building Approval Number.");
+        return false;
+      }
+      if (onboardFireSafetyNum.trim() && !onboardFireSafetyImage) {
+        alert("Section 2 Optional Item Incomplete: You entered a Fire Safety Code, so you must also upload the Fire Safety Certificate image.");
+        return false;
+      }
+      if (!onboardFireSafetyNum.trim() && onboardFireSafetyImage) {
+        alert("Section 2 Optional Item Incomplete: You uploaded a Fire Safety Certificate image, so you must also enter the Fire Safety Code.");
+        return false;
+      }
+    } else if (step === 3) {
+      if (!onboardWaterAvailability) {
+        alert("Section 3 Incomplete: Please select Water Running Availability.");
+        return false;
+      }
+      if (!onboardElectricityAvailability) {
+        alert("Section 3 Incomplete: Please select Electricity Grid / Backup status.");
+        return false;
+      }
+      if (!onboardGpsLocation.trim()) {
+        alert("Section 3 Incomplete: Please enter or detect your GPS Coordinates.");
+        return false;
+      }
+      if (!onboardUtilityBillImage) {
+        alert("Section 3 Incomplete: Please upload or capture your Proof of Utility (bill or card image).");
+        return false;
+      }
+      if (onboardHostelMedia.length > 0 && onboardHostelMedia.length < 2) {
+        alert("Section 3 Optional Item Incomplete: You started adding Hostel Showcase Photos. Please upload at least 2 photos to complete the showcase.");
+        return false;
+      }
+    } else if (step === 4) {
+      if (!onboardEmergencyContactName.trim()) {
+        alert("Section 4 Incomplete: Please enter Emergency Contact Full Name.");
+        return false;
+      }
+      if (!onboardEmergencyContactRelation) {
+        alert("Section 4 Incomplete: Please select Emergency Contact Relationship.");
+        return false;
+      }
+      if (!onboardEmergencyContactPhone.trim()) {
+        alert("Section 4 Incomplete: Please enter Emergency Contact Phone Number.");
+        return false;
+      }
+    } else if (step === 5) {
+      if (!onboardBankName) {
+        alert("Section 5 Incomplete: Please select your Bank Name.");
+        return false;
+      }
+      if (!onboardAccountNum || onboardAccountNum.length !== 10) {
+        alert("Section 5 Incomplete: Please enter a valid 10-digit NUBAN Account Number.");
+        return false;
+      }
+      if (!isBankVerified || !onboardAccountName) {
+        alert("Section 5 Incomplete: Bank account details must be verified and resolved before submitting.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleOnboardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onboardIdValidationError) {
       alert(`Government ID Verification Error: ${onboardIdValidationError}`);
       return;
     }
-    if (!isBankVerified) {
-      alert("Bank Account Verification Required: Please click the 'Verify' button to resolve your account name.");
-      return;
-    }
-    if (!onboardIdNum.trim() || !onboardAccountNum.trim() || !onboardAccountName.trim() || !onboardEmergencyContactName.trim() || !onboardEmergencyContactPhone.trim()) {
-      alert("Please ensure all required sections (Government ID, Property Proof, Utilities, Location, Bank Details, and Emergency Contact) are fully completed.");
-      return;
+    
+    // Validate all 5 wizard steps sequentially
+    for (let s = 1; s <= 5; s++) {
+      if (!validateCurrentKycStep(s)) {
+        setKycWizardStep(s);
+        return;
+      }
     }
 
     onUploadKYC({
@@ -837,15 +949,15 @@ export default function LandlordDashboard({
       proofDoc: onboardProofDocType,
       proofDocImage: onboardProofDocImage || 'Proof_Document_' + activeLandlord.name.replace(/\s+/g, '_') + '.jpg',
       businessRegNum: onboardBusinessRegNum || '',
-      businessRegImage: onboardBusinessRegImage || (onboardBusinessRegNum ? 'CAC_Certificate_' + activeLandlord.name.replace(/\s+/g, '_') + '.jpg' : ''),
-      buildingApprovalNum: onboardBuildingApprovalNum || 'BLD-APP-' + Math.floor(Math.random() * 100000),
-      buildingApprovalImage: onboardBuildingApprovalImage || 'Building_Approval_' + activeLandlord.name.replace(/\s+/g, '_') + '.jpg',
-      fireSafetyNum: onboardFireSafetyNum || 'FIRE-' + Math.floor(Math.random() * 100000),
-      fireSafetyImage: onboardFireSafetyImage || 'Fire_Safety_Certificate_' + activeLandlord.name.replace(/\s+/g, '_') + '.jpg',
+      businessRegImage: onboardBusinessRegImage || '',
+      buildingApprovalNum: onboardBuildingApprovalNum || '',
+      buildingApprovalImage: onboardBuildingApprovalImage || '',
+      fireSafetyNum: onboardFireSafetyNum || '',
+      fireSafetyImage: onboardFireSafetyImage || '',
       waterAvailability: onboardWaterAvailability,
       electricityAvailability: onboardElectricityAvailability,
       utilityBillImage: onboardUtilityBillImage || 'Utility_Bill_' + activeLandlord.name.replace(/\s+/g, '_') + '.jpg',
-      hostelMedia: onboardHostelMedia.length > 0 ? onboardHostelMedia : ['Hostel_Photo_1.jpg', 'Hostel_Photo_2.jpg'],
+      hostelMedia: onboardHostelMedia,
       gpsLocation: onboardGpsLocation || '6.5182, 3.3894',
       bankName: onboardBankName,
       bankAccount: onboardAccountNum,
@@ -863,6 +975,18 @@ export default function LandlordDashboard({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="space-y-8 animate-fadeIn">
+          {/* Welcome Header */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-wood-200/80 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <span className="text-xs font-bold text-wood-500 uppercase tracking-widest flex items-center space-x-1.5">
+                <Home size={14} />
+                <span>Landlord Portal</span>
+              </span>
+              <h1 className="font-display font-bold text-2xl sm:text-3xl text-wood-950 mt-1">Hello, {activeLandlord.name}!</h1>
+              <p className="text-xs sm:text-sm text-wood-600 mt-1">Manage your student hostel listings, escrow payouts, and KYC verification status.</p>
+            </div>
+          </div>
+
           {/* Stats Cards Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="bg-white border border-wood-200/80 p-6 rounded-2xl shadow-2xs flex items-center justify-between">
@@ -2028,9 +2152,7 @@ export default function LandlordDashboard({
 
             {/* MY PROFILE SUBTAB */}
             {subTab === 'profile' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fadeIn max-w-7xl mx-auto">
-                {/* LEFT COLUMN */}
-                <div className="lg:col-span-7 space-y-8">
+              <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
                 {/* GENERAL PROFILE */}
                 <div className="space-y-6">
                   <div className="bg-white p-6 sm:p-8 rounded-3xl border border-wood-200/80 shadow-xs">
@@ -2059,6 +2181,30 @@ export default function LandlordDashboard({
                           onChange={(e) => setProfileName(e.target.value)}
                           className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                         />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-wood-700 mb-1">Phone Number (NGR)</label>
+                          <input
+                            type="tel"
+                            required
+                            value={profilePhone}
+                            onChange={(e) => setProfilePhone(e.target.value)}
+                            className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-wood-700 mb-1">Email Address</label>
+                          <input
+                            type="email"
+                            required
+                            value={profileEmail}
+                            onChange={(e) => setProfileEmail(e.target.value)}
+                            className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                          />
+                        </div>
                       </div>
 
                       {/* Profile Picture Uploader Row */}
@@ -2125,8 +2271,55 @@ export default function LandlordDashboard({
                     </div>
 
                     <form onSubmit={handleOnboardSubmit} className="space-y-6 text-xs text-wood-700">
+                      {/* Step Progress Bar Header */}
+                      <div className="bg-wood-50/80 p-4 rounded-2xl border border-wood-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-wood-950">
+                            Step {kycWizardStep} of 5: {
+                              kycWizardStep === 1 ? 'Identity & Campus Affiliation' :
+                              kycWizardStep === 2 ? 'Property Ownership & Safety Compliances' :
+                              kycWizardStep === 3 ? 'Utilities, Accurate Mapping & Media' :
+                              kycWizardStep === 4 ? 'Emergency Contact Info' :
+                              'Secure Bank Payout Account Details'
+                            }
+                          </span>
+                          <span className="text-[11px] font-bold text-wood-600">{kycWizardStep * 20}% Completed</span>
+                        </div>
+                        <div className="w-full bg-wood-200 h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-wood-900 h-full transition-all duration-300 rounded-full" 
+                            style={{ width: `${kycWizardStep * 20}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-semibold pt-1 gap-1 overflow-x-auto">
+                          {[
+                            { id: 1, name: '1. Identity' },
+                            { id: 2, name: '2. Ownership' },
+                            { id: 3, name: '3. Utilities' },
+                            { id: 4, name: '4. Emergency' },
+                            { id: 5, name: '5. Bank' }
+                          ].map(s => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => setKycWizardStep(s.id)}
+                              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+                                kycWizardStep === s.id 
+                                  ? 'bg-wood-900 text-white font-bold shadow-2xs' 
+                                  : kycWizardStep > s.id 
+                                  ? 'bg-emerald-100 text-emerald-800 font-bold' 
+                                  : 'bg-white text-wood-600 border border-wood-200'
+                              }`}
+                            >
+                              {s.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Section 1: Government ID & Campus Affiliation */}
-                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20">
+                      {kycWizardStep === 1 && (
+                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20 animate-fadeIn">
                         <div className="flex items-center gap-2 border-b border-wood-100 pb-2.5">
                           <span className="bg-wood-900 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]">1</span>
                           <h3 className="font-bold text-xs text-wood-950">Identity & Campus Affiliation</h3>
@@ -2227,9 +2420,11 @@ export default function LandlordDashboard({
                           </div>
                         )}
                       </div>
+                      )}
 
                       {/* Section 2: Property Ownership & Safety Compliances */}
-                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20">
+                      {kycWizardStep === 2 && (
+                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20 animate-fadeIn">
                         <div className="flex items-center gap-2 border-b border-wood-100 pb-2.5">
                           <span className="bg-wood-900 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]">2</span>
                           <h3 className="font-bold text-xs text-wood-950">Property Ownership & Safety Compliances</h3>
@@ -2341,14 +2536,13 @@ export default function LandlordDashboard({
                           {/* Building Approval */}
                           <div className="border border-wood-200 bg-white rounded-xl p-4 flex flex-col justify-between space-y-3 bg-wood-50/10">
                             <div>
-                              <label className="block font-bold text-wood-700 mb-1.5">Building Approval Certificate</label>
+                              <label className="block font-bold text-wood-700 mb-1.5">Building Approval Certificate (Optional)</label>
                               <input
                                 type="text"
                                 value={onboardBuildingApprovalNum}
                                 onChange={(e) => setOnboardBuildingApprovalNum(e.target.value)}
                                 placeholder="E.g., LASBCA ID"
                                 className="w-full bg-white border border-wood-200 rounded-xl px-3 py-1.5 text-xs outline-hidden"
-                                required
                               />
                             </div>
 
@@ -2392,14 +2586,13 @@ export default function LandlordDashboard({
                           {/* Fire Safety Certificate */}
                           <div className="border border-wood-200 bg-white rounded-xl p-4 flex flex-col justify-between space-y-3 bg-wood-50/10">
                             <div>
-                              <label className="block font-bold text-wood-700 mb-1.5">Fire Safety Certificate</label>
+                              <label className="block font-bold text-wood-700 mb-1.5">Fire Safety Certificate (Optional)</label>
                               <input
                                 type="text"
                                 value={onboardFireSafetyNum}
                                 onChange={(e) => setOnboardFireSafetyNum(e.target.value)}
                                 placeholder="E.g., Fire Service Code"
                                 className="w-full bg-white border border-wood-200 rounded-xl px-3 py-1.5 text-xs outline-hidden"
-                                required
                               />
                             </div>
 
@@ -2441,9 +2634,11 @@ export default function LandlordDashboard({
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* Section 3: Utilities, Accurate Mapping & Media Showcases */}
-                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20">
+                      {kycWizardStep === 3 && (
+                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20 animate-fadeIn">
                         <div className="flex items-center gap-2 border-b border-wood-100 pb-2.5">
                           <span className="bg-wood-900 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]">3</span>
                           <h3 className="font-bold text-xs text-wood-950">Utilities, Accurate Mapping & Media</h3>
@@ -2552,7 +2747,7 @@ export default function LandlordDashboard({
                           {/* Showcase Photos */}
                           <div className="border border-wood-200 bg-white rounded-xl p-4 flex flex-col justify-between space-y-3">
                             <div>
-                              <label className="block font-bold text-wood-700 mb-1">Hostel Photos / Video Showcase</label>
+                              <label className="block font-bold text-wood-700 mb-1">Hostel Photos / Video Showcase (Optional)</label>
                               <p className="text-[10px] text-wood-400 mb-2">Exterior or room structural safety previews</p>
                             </div>
 
@@ -2618,9 +2813,11 @@ export default function LandlordDashboard({
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* Section 4: Emergency Contact Info (Family, Relative, or Caretaker) */}
-                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20">
+                      {kycWizardStep === 4 && (
+                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20 animate-fadeIn">
                         <div className="flex items-center gap-2 border-b border-wood-100 pb-2.5">
                           <span className="bg-wood-900 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]">4</span>
                           <h3 className="font-bold text-xs text-wood-950">Emergency Contact Info (Family, Relative, or Caretaker)</h3>
@@ -2666,9 +2863,11 @@ export default function LandlordDashboard({
                           />
                         </div>
                       </div>
+                      )}
 
                       {/* Section 5: Secure Bank Payout Account Details */}
-                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20">
+                      {kycWizardStep === 5 && (
+                      <div className="border border-wood-200 rounded-2xl p-5 space-y-4 bg-wood-50/20 animate-fadeIn">
                         <div className="flex items-center gap-2 border-b border-wood-100 pb-2.5">
                           <span className="bg-wood-900 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]">5</span>
                           <h3 className="font-bold text-xs text-wood-950">Secure Bank Payout Account Details</h3>
@@ -2738,16 +2937,39 @@ export default function LandlordDashboard({
                           </div>
                         )}
                       </div>
+                      )}
 
-                      {/* Submit Verification button */}
-                      <div className="pt-2">
-                        <button
-                          type="submit"
-                          className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer text-xs uppercase tracking-wider flex items-center justify-center gap-2"
-                        >
-                          <ShieldAlert size={16} />
-                          <span>Submit & Update KYC Verification Profile</span>
-                        </button>
+                      {/* Step Navigation Controls */}
+                      <div className="flex justify-between items-center pt-4 border-t border-wood-200 gap-3">
+                        {kycWizardStep > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => setKycWizardStep(prev => prev - 1)}
+                            className="px-5 py-2.5 bg-wood-100 hover:bg-wood-200 text-wood-900 font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center space-x-1"
+                          >
+                            <span>← Previous Section</span>
+                          </button>
+                        ) : (
+                          <div />
+                        )}
+
+                        {kycWizardStep < 5 ? (
+                          <button
+                            type="button"
+                            onClick={() => setKycWizardStep(prev => prev + 1)}
+                            className="px-6 py-2.5 bg-wood-900 hover:bg-black text-white font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center space-x-1 shadow-xs"
+                          >
+                            <span>Next Section →</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center space-x-2 shadow-md uppercase tracking-wider"
+                          >
+                            <ShieldAlert size={16} />
+                            <span>Submit & Update KYC Profile</span>
+                          </button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -2780,12 +3002,6 @@ export default function LandlordDashboard({
                       </button>
                     </div>
                   </div>
-                </div>
-              </div>
-
-                {/* RIGHT COLUMN: 20-POINT CHECKLIST STATUS MAP */}
-                <div className="lg:col-span-5 sticky top-8 space-y-6">
-                  {renderChecklistStatusMap()}
                 </div>
               </div>
             )}
@@ -2895,11 +3111,20 @@ export default function LandlordDashboard({
                     </div>
 
                     <div>
-                      <label className="block font-bold mb-1">Detailed Description</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-bold">Detailed Description *</label>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          newDescription.trim().split(/\s+/).filter(Boolean).length >= 10
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-amber-100 text-amber-900 border border-amber-300'
+                        }`}>
+                          {newDescription.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                        </span>
+                      </div>
                       <textarea
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}
-                        placeholder="Detail key structural components (borehole water, fence, pre-paid meter)..."
+                        placeholder="Detail key structural components, water source, electricity meter, and environment (minimum 10 words)..."
                         className="w-full bg-wood-50 border border-wood-200 rounded-xl p-3 text-xs outline-hidden focus:ring-1 focus:ring-wood-500"
                         rows={3}
                         required

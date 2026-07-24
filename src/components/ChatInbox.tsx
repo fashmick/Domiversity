@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Shield, AlertTriangle, MessageSquare, Info, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Send, Shield, AlertTriangle, MessageSquare, Info, ShieldCheck, ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react';
 import { ChatThread, Message, User } from '../types';
 import { formatDate } from '../utils';
 import { checkMessageContactSharing } from '../state';
@@ -9,7 +9,7 @@ interface ChatInboxProps {
   allUsers: User[];
   threads: ChatThread[];
   messages: Message[];
-  onSendMessage: (threadId: string, text: string) => { success: boolean; error?: string };
+  onSendMessage: (threadId: string, text: string, attachments?: string[]) => { success: boolean; error?: string };
   selectedThreadId?: string | null;
   onSelectThread?: (threadId: string | null) => void;
 }
@@ -36,7 +36,18 @@ export default function ChatInbox({
 
   const [inputText, setInputText] = useState('');
   const [blockedAlert, setBlockedAlert] = useState<string | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [customPhotoUrl, setCustomPhotoUrl] = useState('');
+  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sample inspection photos inspectors can quickly attach
+  const SAMPLE_INSPECTION_PHOTOS = [
+    { label: 'Room Interior & Lighting', url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=600' },
+    { label: 'Running Water Tap Test', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600' },
+    { label: 'Bathroom & Sanitary Check', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600' },
+    { label: 'Hostel Compound & Security Gate', url: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&q=80&w=600' }
+  ];
 
   // Filter threads that belong to the active user (either as the initiator studentId or the otherId)
   const userThreads = threads.filter(thread => 
@@ -65,23 +76,25 @@ export default function ChatInbox({
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !activeThread) return;
+    if ((!inputText.trim() && selectedAttachments.length === 0) || !activeThread) return;
 
-    // Run the contact sharing prevention check
-    const filterResult = checkMessageContactSharing(inputText);
+    // Run the contact sharing prevention check on text
+    if (inputText.trim()) {
+      const filterResult = checkMessageContactSharing(inputText);
 
-    if (filterResult.isBlocked) {
-      setBlockedAlert(filterResult.reason || 'Message blocked.');
-      // Auto-clear alert after 7 seconds
-      setTimeout(() => {
-        setBlockedAlert(null);
-      }, 7000);
-      return;
+      if (filterResult.isBlocked) {
+        setBlockedAlert(filterResult.reason || 'Message blocked.');
+        setTimeout(() => {
+          setBlockedAlert(null);
+        }, 7000);
+        return;
+      }
     }
 
-    // If clean, send message
-    onSendMessage(activeThread.id, inputText);
+    // Send message with attachments
+    onSendMessage(activeThread.id, inputText, selectedAttachments.length > 0 ? selectedAttachments : undefined);
     setInputText('');
+    setSelectedAttachments([]);
     setBlockedAlert(null);
   };
 
@@ -243,7 +256,19 @@ export default function ChatInbox({
                             <span>[Message blocked for contact-sharing attempt]</span>
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          <div className="space-y-2">
+                            {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {msg.attachments.map((imgUrl, i) => (
+                                  <a key={i} href={imgUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-black/10 group relative">
+                                    <img src={imgUrl} alt="Inspection Attachment" referrerPolicy="no-referrer" className="w-full h-36 object-cover group-hover:scale-105 transition-transform" />
+                                    <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">Inspection Photo</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                       
@@ -256,6 +281,25 @@ export default function ChatInbox({
                 })}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Selected Photo Attachments Preview bar */}
+              {selectedAttachments.length > 0 && (
+                <div className="p-3 bg-wood-50 border-t border-wood-200 flex items-center gap-2 overflow-x-auto">
+                  <span className="text-[10px] font-bold text-wood-600 uppercase shrink-0">Attachments:</span>
+                  {selectedAttachments.map((url, idx) => (
+                    <div key={idx} className="relative shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-wood-300">
+                      <img src={url} alt="Attachment" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAttachments(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 text-[9px]"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Blocked Message Alert Toast */}
               {blockedAlert && (
@@ -270,6 +314,15 @@ export default function ChatInbox({
 
               {/* Chat Input */}
               <form onSubmit={handleSend} className="p-4 border-t border-wood-200 bg-white flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoModal(true)}
+                  className="p-3 bg-wood-100 hover:bg-amber-100 text-wood-700 hover:text-amber-900 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                  title="Upload Inspection Photo"
+                >
+                  <Camera size={18} />
+                </button>
+
                 <input
                   type="text"
                   value={inputText}
@@ -277,12 +330,12 @@ export default function ChatInbox({
                     setInputText(e.target.value);
                     if (blockedAlert) setBlockedAlert(null); // Clear on retyping
                   }}
-                  placeholder="Type your message securely..."
+                  placeholder="Type your message securely or attach inspection proof..."
                   className="flex-1 bg-wood-50 border border-wood-200 focus:border-wood-500 rounded-xl px-4 py-3 text-sm text-wood-950 outline-hidden placeholder-wood-400 focus:ring-1 focus:ring-wood-500 transition-all"
                 />
                 <button
                   type="submit"
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() && selectedAttachments.length === 0}
                   className="bg-wood-600 hover:bg-wood-700 disabled:bg-wood-200 text-white p-3 rounded-xl transition-all flex items-center justify-center cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <Send size={18} />
@@ -300,6 +353,76 @@ export default function ChatInbox({
           )}
         </div>
       </div>
+
+      {/* Attach Photo Modal */}
+      {showPhotoModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-wood-200 shadow-2xl relative">
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              className="absolute top-4 right-4 text-wood-400 hover:text-wood-900 font-bold p-1 rounded-full cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div>
+              <h3 className="font-display font-bold text-lg text-wood-950 flex items-center gap-2">
+                <Camera size={20} className="text-amber-600" />
+                <span>Attach Inspection Photo</span>
+              </h3>
+              <p className="text-xs text-wood-500 mt-1">
+                Upload room, tap water, power, or security gate photos. Pictures sent here are stored directly on the <strong>Inspected Media Records</strong> page.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-wood-800">Choose Sample Inspection Photo:</label>
+              <div className="grid grid-cols-2 gap-2">
+                {SAMPLE_INSPECTION_PHOTOS.map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAttachments(prev => [...prev, sample.url]);
+                      setShowPhotoModal(false);
+                    }}
+                    className="p-2 bg-wood-50 hover:bg-amber-50 border border-wood-200 hover:border-amber-300 rounded-xl text-left flex items-center gap-2.5 transition-all cursor-pointer group"
+                  >
+                    <img src={sample.url} alt={sample.label} className="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    <span className="text-[11px] font-bold text-wood-800 group-hover:text-amber-950 line-clamp-2">{sample.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-wood-800 mb-1">Or Paste Direct Image URL:</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={customPhotoUrl}
+                    onChange={(e) => setCustomPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className="flex-1 bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-xs text-wood-900 outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customPhotoUrl.trim()) {
+                        setSelectedAttachments(prev => [...prev, customPhotoUrl.trim()]);
+                        setCustomPhotoUrl('');
+                        setShowPhotoModal(false);
+                      }
+                    }}
+                    className="px-4 py-2 bg-wood-800 hover:bg-wood-900 text-white font-bold rounded-xl text-xs cursor-pointer"
+                  >
+                    Attach
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

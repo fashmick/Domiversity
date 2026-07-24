@@ -76,7 +76,13 @@ export default function RefundModal({
       return;
     }
     if (!reason.trim()) {
-      alert("Please enter a brief reason for requesting the refund.");
+      alert("Please enter a reason for requesting the refund.");
+      return;
+    }
+
+    const wordCount = reason.trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount < 10) {
+      alert(`Description too short: Reason for refund must contain at least 10 words (currently ${wordCount} words). Please explain why you are requesting this refund.`);
       return;
     }
 
@@ -231,11 +237,20 @@ export default function RefundModal({
 
             {/* REASON FOR REFUND */}
             <div className="space-y-1.5">
-              <label className="font-bold text-wood-900 text-xs block">Reason for Refund *</label>
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-wood-900 text-xs block">Reason for Refund *</label>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                  reason.trim().split(/\s+/).filter(Boolean).length >= 10
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}>
+                  {reason.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                </span>
+              </div>
               <textarea
                 rows={3}
                 required
-                placeholder="Describe why you are rejecting or refunding (e.g. physical inspection failed, borehole broken, false room photos)..."
+                placeholder="Describe why you are rejecting or refunding (minimum 10 words, e.g. physical inspection failed, borehole broken, false photos)..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="w-full p-3 bg-white rounded-xl border border-wood-200 text-xs text-wood-900 focus:outline-none focus:ring-2 focus:ring-amber-500"

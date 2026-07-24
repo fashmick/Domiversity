@@ -284,6 +284,12 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
           <div className="flex items-center space-x-3">
             <a href="#how-it-works" className="hidden md:inline-block text-sm font-medium text-wood-700 hover:text-wood-950 transition-colors">How It Works</a>
             <a href="#pricing" className="hidden md:inline-block text-sm font-medium text-wood-700 hover:text-wood-950 transition-colors">Pricing</a>
+            <button 
+              onClick={() => window.history.pushState({}, '', '/faqs')}
+              className="hidden md:inline-block text-sm font-medium text-wood-700 hover:text-wood-950 transition-colors cursor-pointer"
+            >
+              Help & FAQs
+            </button>
             <div className="hidden md:block h-4 w-px bg-wood-200"></div>
             <button
               onClick={() => window.history.pushState({}, '', '/signin')}
@@ -333,6 +339,15 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
                 >
                   Pricing
                 </a>
+                <button 
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    window.history.pushState({}, '', '/faqs');
+                  }}
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-wood-700 hover:text-wood-950 hover:bg-wood-50 transition-all text-left cursor-pointer"
+                >
+                  Help & FAQs
+                </button>
                 <div className="border-t border-wood-100 pt-2 flex flex-col space-y-2">
                   <button
                     onClick={() => {
@@ -853,11 +868,6 @@ export default function LandingPage({ schools, users, onSelectRole, onSearchScho
             </div>
           </div>
         </div>
-      </section>
-
-      {/* FAQs Section for Students, Landlords, and Inspectors */}
-      <section id="faqs" className="py-12 bg-white border-b border-wood-100">
-        <FaqSection initialCategory="ALL" />
       </section>
 
       {/* Testimonials */}

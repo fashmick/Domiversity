@@ -162,13 +162,51 @@ export const INITIAL_USERS: User[] = [
     schoolId: 'school_1',
     profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
     kycDetails: {
-      idType: 'Voter\'s Card',
+      idType: 'National Identity Number (NIN)',
       idNumber: '90F7B8C241',
-      idImage: 'VotersCard_Tunde_Alao.png',
-      proofDoc: 'Unilag_Student_ID_Tunde.jpg',
+      idImage: 'NIN_Tunde_Alao.png',
+      proofDoc: 'NIN_Slip_Tunde.jpg',
       bankName: 'Zenith Bank',
       bankAccount: '2112233445',
       bankAccountName: 'Tunde Alao'
+    }
+  },
+  {
+    id: 'inspector_2',
+    name: 'Grace Adebayo',
+    email: 'grace.adebayo@roomlyinspector.ng',
+    phone: '08099887766',
+    role: 'INSPECTOR',
+    kycStatus: 'APPROVED',
+    schoolId: 'school_1',
+    profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120',
+    kycDetails: {
+      idType: 'Voter\'s Card',
+      idNumber: 'VC-8899123',
+      idImage: 'VC_Grace_Adebayo.png',
+      proofDoc: 'VC_Slip_Grace.jpg',
+      bankName: 'Guaranty Trust Bank (GTB)',
+      bankAccount: '0129883321',
+      bankAccountName: 'Grace Adebayo'
+    }
+  },
+  {
+    id: 'inspector_3',
+    name: 'Emeka Okafor',
+    email: 'emeka.okafor@roomlyinspector.ng',
+    phone: '07033221100',
+    role: 'INSPECTOR',
+    kycStatus: 'APPROVED',
+    schoolId: 'school_2',
+    profilePicture: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=120',
+    kycDetails: {
+      idType: 'Driver\'s License',
+      idNumber: 'DL-9988112-X',
+      idImage: 'DL_Emeka_Okafor.jpg',
+      proofDoc: 'DL_Slip_Emeka.jpg',
+      bankName: 'First Bank of Nigeria',
+      bankAccount: '3099887711',
+      bankAccountName: 'Emeka Okafor'
     }
   },
   {

@@ -158,6 +158,29 @@ export interface Message {
   createdAt: string;
   isBlocked: boolean;
   blockedReason?: string;
+  attachments?: string[];
+}
+
+export interface InspectedMediaRecord {
+  id: string;
+  photoUrl: string;
+  caption?: string;
+  uploadedAt: string;
+  inspectorId: string;
+  inspectorName: string;
+  studentId: string;
+  studentName: string;
+  studentPhone?: string;
+  studentEmail?: string;
+  hostelId: string;
+  hostelName: string;
+  hostelAddress?: string;
+  schoolId?: string;
+  landlordId: string;
+  landlordName: string;
+  landlordPhone?: string;
+  jobId?: string;
+  threadId?: string;
 }
 
 export interface ChatThread {

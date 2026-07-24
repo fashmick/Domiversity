@@ -18,8 +18,8 @@ interface StudentDashboardProps {
   bookmarks: string[];
   users?: User[];
   onToggleBookmark: (hostelId: string) => void;
-  onBookHostel: (hostelId: string, inspectionChoice?: 'SELF' | 'ROOMLY') => void;
-  onRequestInspection: (hostelId: string) => void;
+  onBookHostel: (hostelId: string, inspectionChoice?: 'SELF' | 'ROOMLY', inspectorId?: string) => void;
+  onRequestInspection: (hostelId: string, inspectorId?: string) => void;
   onConfirmSatisfaction: (bookingId: string) => void;
   onOpenDispute: (bookingId: string, reason: string, evidence: string) => void;
   onCancelBooking?: (bookingId: string, reason: string) => void;
@@ -75,6 +75,7 @@ export default function StudentDashboard({
   
   // Inspection Choice selection during Rent Booking
   const [inspectionChoice, setInspectionChoice] = useState<'SELF' | 'ROOMLY'>('SELF');
+  const [selectedInspectorId, setSelectedInspectorId] = useState<string>('');
 
   // Trigger countdown ticks
   const [, setTick] = useState(0);
@@ -193,7 +194,7 @@ export default function StudentDashboard({
     return matchesKeyword && matchesSchool && matchesBudget && matchesGender && matchesType && matchesAmenities && hostel.isAvailable;
   });
 
-  const studentBookings = bookings.filter(b => b.studentId === activeStudent.id || b.id === 'booking_demo_refund');
+  const studentBookings = bookings.filter(b => b.studentId === activeStudent.id);
   const studentJobs = jobs.filter(j => j.studentId === activeStudent.id);
   const bookmarkedHostels = hostels.filter(h => bookmarks.includes(h.id));
 
@@ -260,9 +261,9 @@ export default function StudentDashboard({
           setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' });
           
           if (showPaystackModal.type === 'RENT') {
-            onBookHostel(showPaystackModal.hostelId, inspectionChoice);
+            onBookHostel(showPaystackModal.hostelId, inspectionChoice, inspectionChoice === 'ROOMLY' ? selectedInspectorId : undefined);
           } else {
-            onRequestInspection(showPaystackModal.hostelId);
+            onRequestInspection(showPaystackModal.hostelId, selectedInspectorId);
           }
           alert(`Escrow Payment Successful! Reference: ${response.reference}. Your funds are held securely in escrow.`);
         },
@@ -280,9 +281,9 @@ export default function StudentDashboard({
         setIsProcessingPayment(false);
         setShowPaystackModal({ isOpen: false, hostelId: '', type: 'RENT' });
         if (showPaystackModal.type === 'RENT') {
-          onBookHostel(showPaystackModal.hostelId, inspectionChoice);
+          onBookHostel(showPaystackModal.hostelId, inspectionChoice, inspectionChoice === 'ROOMLY' ? selectedInspectorId : undefined);
         } else {
-          onRequestInspection(showPaystackModal.hostelId);
+          onRequestInspection(showPaystackModal.hostelId, selectedInspectorId);
         }
       }, 1500);
     }
@@ -290,6 +291,11 @@ export default function StudentDashboard({
 
   const handleSubmitDispute = (bookingId: string) => {
     if (!disputeReason.trim()) return;
+    const words = disputeReason.trim().split(/\s+/).filter(Boolean).length;
+    if (words < 10) {
+      alert(`Description too short: Reason for cancellation must contain at least 10 words (currently ${words} words). Please provide more context.`);
+      return;
+    }
     onOpenDispute(bookingId, disputeReason, disputeEvidence || 'Photographic evidence attached to file.');
     setDisputeBookingId(null);
     setDisputeReason('');
@@ -299,6 +305,12 @@ export default function StudentDashboard({
   const handleCreateRoommatePost = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostDescription.trim() || !activeStudent.schoolId) return;
+
+    const words = newPostDescription.trim().split(/\s+/).filter(Boolean).length;
+    if (words < 10) {
+      alert(`Description too short: Roommate profile description must be at least 10 words long (currently ${words} words). Please share more about yourself and your preferences.`);
+      return;
+    }
 
     onCreateCohabitantPost({
       schoolId: activeStudent.schoolId,
@@ -337,49 +349,6 @@ export default function StudentDashboard({
             <p className="text-sm text-wood-600 mt-1">
               Find safe dorms, split costs with campus roommates, and verify listings through physical inspections.
             </p>
-          </div>
-
-          {/* Subtab Navigation Pills */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSubTab('search')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                subTab === 'search' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
-              }`}
-            >
-              <Compass size={14} />
-              <span>Hostels Directory</span>
-            </button>
-
-            <button
-              onClick={() => setSubTab('bookings')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                subTab === 'bookings' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
-              }`}
-            >
-              <Shield size={14} />
-              <span>My Bookings</span>
-            </button>
-
-            <button
-              onClick={() => setSubTab('roommates')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                subTab === 'roommates' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
-              }`}
-            >
-              <Users size={14} />
-              <span>Roommates</span>
-            </button>
-
-            <button
-              onClick={() => setSubTab('bookmarks')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                subTab === 'bookmarks' ? 'bg-wood-900 text-white shadow-xs' : 'bg-wood-50 text-wood-700 hover:bg-wood-100 border border-wood-200'
-              }`}
-            >
-              <Bookmark size={14} />
-              <span>Saved ({bookmarks.length})</span>
-            </button>
           </div>
         </div>
 
@@ -514,9 +483,24 @@ export default function StudentDashboard({
                 <Search size={18} className="text-wood-400 ml-2" />
                 <input
                   type="text"
-                  placeholder="Search by street name, landmark, or hostel name..."
+                  placeholder="Search by school, street name, landmark, or hostel name..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSearchTerm(val);
+                    if (val.trim().length >= 2) {
+                      const term = val.toLowerCase().trim();
+                      const matchedSchool = schools.find(s => 
+                        s.name.toLowerCase().includes(term) ||
+                        (s.abbreviation && s.abbreviation.toLowerCase().includes(term)) ||
+                        term.includes(s.name.toLowerCase()) ||
+                        (s.abbreviation && term.includes(s.abbreviation.toLowerCase()))
+                      );
+                      if (matchedSchool) {
+                        setSelectedSchool(matchedSchool.id);
+                      }
+                    }
+                  }}
                   className="w-full bg-transparent border-0 outline-hidden focus:ring-0 text-sm text-wood-950 placeholder-wood-400"
                 />
                 {searchTerm && (
@@ -879,11 +863,20 @@ export default function StudentDashboard({
 
                           <div className="space-y-3 text-xs">
                             <div>
-                              <label className="block font-bold text-wood-700 mb-1">Reason for Cancellation</label>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block font-bold text-wood-700">Reason for Cancellation *</label>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  disputeReason.trim().split(/\s+/).filter(Boolean).length >= 10
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-red-100 text-red-900 border border-red-300'
+                                }`}>
+                                  {disputeReason.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                                </span>
+                              </div>
                               <textarea
                                 value={disputeReason}
                                 onChange={(e) => setDisputeReason(e.target.value)}
-                                placeholder="E.g., Borehole is completely broken, landlord has no light, room size is 50% smaller than photos..."
+                                placeholder="E.g., Borehole is completely broken, landlord has no light, room size is 50% smaller than photos (minimum 10 words)..."
                                 className="w-full bg-white border border-wood-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-hidden"
                                 rows={3}
                               />
@@ -1201,11 +1194,20 @@ export default function StudentDashboard({
                       </div>
 
                       <div>
-                        <label className="block font-bold text-wood-700 mb-1">Description (Tell prospective matches about yourself)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block font-bold text-wood-700">Description (Tell prospective matches about yourself) *</label>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                            newPostDescription.trim().split(/\s+/).filter(Boolean).length >= 10
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-amber-100 text-amber-900 border border-amber-300'
+                          }`}>
+                            {newPostDescription.trim().split(/\s+/).filter(Boolean).length} / 10 words min
+                          </span>
+                        </div>
                         <textarea
                           value={newPostDescription}
                           onChange={(e) => setNewPostDescription(e.target.value)}
-                          placeholder="E.g., I am in 300 Level CS, I study a lot, very clean, am looking to find someone to rent a self-contain apartment with..."
+                          placeholder="E.g., I am in 300 Level CS, I study a lot, very clean, am looking to find someone to rent a self-contain apartment with (minimum 10 words)..."
                           className="w-full bg-wood-50 border border-wood-200 rounded-xl p-3 text-xs outline-hidden focus:ring-1 focus:ring-wood-500"
                           rows={4}
                           required
@@ -1420,6 +1422,30 @@ export default function StudentDashboard({
                       type="text"
                       value={profileDept}
                       onChange={(e) => setProfileDept(e.target.value)}
+                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-wood-700 mb-1">Phone Number (NGR)</label>
+                    <input
+                      type="tel"
+                      required
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(e.target.value)}
+                      className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-wood-700 mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={profileEmail}
+                      onChange={(e) => setProfileEmail(e.target.value)}
                       className="w-full bg-wood-50 border border-wood-200 rounded-xl px-3 py-2 text-sm outline-hidden focus:border-wood-500 focus:ring-1 focus:ring-wood-500"
                     />
                   </div>
@@ -1770,6 +1796,66 @@ export default function StudentDashboard({
                         <p className="text-[10px] text-wood-500 leading-normal mt-0.5">Hire a vetted on-campus student inspector to visit the room, run checking protocols, and upload full photographic reviews.</p>
                       </div>
                     </label>
+
+                    {/* School Inspector Selector List */}
+                    {inspectionChoice === 'ROOMLY' && (() => {
+                      const hostel = hostels.find(h => h.id === showPaystackModal.hostelId);
+                      const currentSchoolId = hostel?.schoolId || activeStudent.schoolId;
+                      const schoolInspectors = (users || []).filter(u => u.role === 'INSPECTOR' && (u.schoolId === currentSchoolId || !u.schoolId || u.kycStatus === 'APPROVED'));
+                      const currentSchool = schools.find(s => s.id === currentSchoolId);
+
+                      return (
+                        <div className="mt-3 pt-3 border-t border-wood-200 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-wood-950">Select Inspector for {currentSchool?.name || 'Institution'}:</span>
+                            <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                              {schoolInspectors.length} Verified Inspector(s)
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            {schoolInspectors.map(inspector => {
+                              const isSelected = selectedInspectorId === inspector.id || (!selectedInspectorId && inspector.id === schoolInspectors[0]?.id);
+                              return (
+                                <div
+                                  key={inspector.id}
+                                  onClick={() => setSelectedInspectorId(inspector.id)}
+                                  className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                                    isSelected 
+                                      ? 'bg-amber-100/80 border-amber-500 ring-1 ring-amber-500 shadow-3xs' 
+                                      : 'bg-white border-wood-200 hover:bg-wood-50'
+                                  }`}
+                                >
+                                  <div className="flex items-center space-x-2.5">
+                                    <div className="w-8 h-8 rounded-full bg-wood-200 overflow-hidden shrink-0 border border-wood-300">
+                                      {inspector.profilePicture ? (
+                                        <img src={inspector.profilePicture} alt={inspector.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full bg-wood-700 text-white font-bold flex items-center justify-center text-xs">
+                                          {inspector.name.charAt(0)}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h5 className="font-bold text-xs text-wood-950 flex items-center gap-1">
+                                        <span>{inspector.name}</span>
+                                        <span className="text-[8px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded">GOVT ID</span>
+                                      </h5>
+                                      <p className="text-[10px] text-wood-500">
+                                        Bank: {inspector.kycDetails?.bankName || 'GTB'} ({inspector.kycDetails?.bankAccountName || inspector.name})
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${isSelected ? 'bg-amber-900 text-white' : 'bg-wood-100 text-wood-600'}`}>
+                                    {isSelected ? 'Selected' : 'Choose'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="bg-amber-50/80 border border-amber-200 p-3.5 rounded-2xl text-left">
