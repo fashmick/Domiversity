@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings, Compass, Users, Bookmark, CreditCard, ShieldCheck, Bot, HelpCircle, Receipt, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, MessageSquare, Menu, X, ChevronDown, ShieldAlert, LogOut, Settings, Compass, Users, Bookmark, CreditCard, ShieldCheck, Bot, HelpCircle, Receipt, Camera, Sun, Moon } from 'lucide-react';
 import { User, UserRole } from '../types';
 import DormiversityLogo from './DormiversityLogo';
 
@@ -26,6 +26,28 @@ export default function Navigation({
 }: NavigationProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Global theme switcher state (Wood-inspired vs Late-Night High-Contrast Dark Mode)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') || localStorage.getItem('dormiversity_theme') === 'dark';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('dormiversity_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('dormiversity_theme', 'wood');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+  };
+
   return (
     <nav className="bg-white border-b border-wood-200 sticky top-0 z-50 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,8 +59,8 @@ export default function Navigation({
             </div>
           </div>
 
-          {/* Right Section: User Info, Avatar & Menu Button */}
-          <div className="flex items-center space-x-4">
+          {/* Right Section: User Info, Avatar, Theme Toggle & Menu Button */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* User Profile Badge */}
             {currentRole !== 'STUDENT' && currentRole !== 'LANDLORD' && (
               <div className="bg-wood-50 text-wood-900 border border-wood-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-semibold shadow-xs">
@@ -52,12 +74,27 @@ export default function Navigation({
               </div>
             )}
 
+            {/* Global Theme Toggle Button (Top Bar) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={isDarkMode ? "Switch to Wood-Inspired Theme" : "Switch to Late-Night High-Contrast Dark Mode"}
+              aria-label="Toggle theme"
+              className="p-2 rounded-xl transition-all cursor-pointer bg-wood-100 hover:bg-wood-200 text-wood-800 border border-wood-250 shadow-2xs flex items-center justify-center"
+            >
+              {isDarkMode ? (
+                <Sun size={18} className="text-amber-400" />
+              ) : (
+                <Moon size={18} className="text-wood-800" />
+              )}
+            </button>
+
             {/* Profile Avatar, Menu & Actions */}
             <div className="flex items-center space-x-2.5">
               {/* Menu Button (Desktop) */}
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="hidden sm:flex px-3.5 py-2 rounded-xl text-xs font-bold transition-all items-center space-x-2 bg-wood-900 hover:bg-wood-850 text-white shadow-xs hover:shadow-sm cursor-pointer mr-3"
+                className="hidden sm:flex px-3.5 py-2 rounded-xl text-xs font-bold transition-all items-center space-x-2 bg-wood-900 hover:bg-wood-850 text-white shadow-xs hover:shadow-sm cursor-pointer mr-2"
               >
                 <Menu size={14} />
                 <span>Menu</span>
@@ -161,6 +198,29 @@ export default function Navigation({
               </div>
             </div>
           </button>
+
+          {/* Theme Switcher Toggle Card inside Drawer */}
+          <div className="px-4 py-3 mx-3.5 my-2.5 bg-wood-50 rounded-2xl border border-wood-200 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center space-x-2.5 text-xs font-bold text-wood-950">
+              {isDarkMode ? <Moon size={16} className="text-amber-400" /> : <Sun size={16} className="text-amber-600" />}
+              <span>{isDarkMode ? 'Late-Night Dark Mode' : 'Wood Theme'}</span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                isDarkMode ? 'bg-amber-600' : 'bg-wood-300'
+              }`}
+              role="switch"
+              aria-checked={isDarkMode}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                  isDarkMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
 
           {/* Navigation links inside drawer */}
           <div className="flex-1 overflow-y-auto py-3 px-3.5 space-y-1 bg-white">

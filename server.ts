@@ -71,6 +71,19 @@ async function loadDefaultState() {
   }
 }
 
+// Helper to parse firebase-applet-config.json
+function getFirebaseConfig(): any {
+  try {
+    const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Failed reading firebase-applet-config.json', err);
+  }
+  return null;
+}
+
 // Read/Write state
 async function getPlatformState() {
   if (platformState) {
@@ -89,6 +102,14 @@ async function getPlatformState() {
         if (platformState.settings.resendApiKey) process.env.RESEND_API_KEY = platformState.settings.resendApiKey;
         if (platformState.settings.googleClientId) process.env.GOOGLE_CLIENT_ID = platformState.settings.googleClientId;
         if (platformState.settings.googleClientSecret) process.env.GOOGLE_CLIENT_SECRET = platformState.settings.googleClientSecret;
+      }
+
+      // Auto-fallback GOOGLE_CLIENT_ID from firebase-applet-config.json if not explicitly configured
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        const fbConfig = getFirebaseConfig();
+        if (fbConfig?.oAuthClientId) {
+          process.env.GOOGLE_CLIENT_ID = fbConfig.oAuthClientId;
+        }
       }
 
       // Auto-migrate to the comprehensive 90 Nigerian schools list
@@ -488,11 +509,11 @@ app.post('/api/auth/send-otp', async (req, res) => {
       } else {
         const errJson = await emailRes.json().catch(() => null);
         emailError = errJson?.message || (await emailRes.text());
-        console.error('Resend delivery failed:', emailError);
+        console.warn('Resend testing mode notice:', emailError);
       }
     } catch (err: any) {
       emailError = err.message;
-      console.error('Resend error:', err);
+      console.warn('Resend send exception:', err);
     }
   }
 
@@ -643,6 +664,59 @@ app.get('/api/auth/google/url', async (req, res) => {
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   res.json({ url: authUrl });
+});
+
+// OAuth Diagnostic & Verification Endpoint
+app.get('/api/auth/google/diagnostics', async (req, res) => {
+  await getPlatformState();
+  const redirectUri = getRedirectUri(req);
+  const origin = redirectUri.replace(/\/auth\/callback$/, '');
+  const fbConfig = getFirebaseConfig();
+
+  const firebaseClientId = fbConfig?.oAuthClientId || 'NOT_FOUND';
+  const effectiveClientId = process.env.GOOGLE_CLIENT_ID || firebaseClientId;
+  const hasClientSecret = Boolean(process.env.GOOGLE_CLIENT_SECRET);
+
+  const isClientIdMatching = Boolean(
+    effectiveClientId &&
+    firebaseClientId &&
+    effectiveClientId === firebaseClientId
+  );
+
+  res.json({
+    timestamp: new Date().toISOString(),
+    status: isClientIdMatching ? 'HEALTHY' : 'MISMATCH_OR_MISSING',
+    firebaseConfig: {
+      found: Boolean(fbConfig),
+      projectId: fbConfig?.projectId || null,
+      oAuthClientId: firebaseClientId
+    },
+    serverOAuthSettings: {
+      effectiveClientId: effectiveClientId || 'NOT_SET',
+      hasClientSecret,
+      envClientId: process.env.GOOGLE_CLIENT_ID || null
+    },
+    calculatedUrls: {
+      authorizedJavaScriptOrigin: origin,
+      authorizedRedirectUri: redirectUri
+    },
+    validationCheck: {
+      clientIdMatchesFirebase: isClientIdMatching,
+      hasClientSecretConfigured: hasClientSecret,
+      gcpConsoleInstructions: {
+        requiredAuthorizedJavaScriptOrigins: [
+          origin,
+          "https://ais-dev-ynj6fgeaskzdrvh6nfd6j6-820114844945.europe-west2.run.app",
+          "https://ais-pre-ynj6fgeaskzdrvh6nfd6j6-820114844945.europe-west2.run.app"
+        ],
+        requiredAuthorizedRedirectUris: [
+          redirectUri,
+          "https://ais-dev-ynj6fgeaskzdrvh6nfd6j6-820114844945.europe-west2.run.app/auth/callback",
+          "https://ais-pre-ynj6fgeaskzdrvh6nfd6j6-820114844945.europe-west2.run.app/auth/callback"
+        ]
+      }
+    }
+  });
 });
 
 app.get(['/auth/callback', '/auth/callback/'], async (req, res) => {

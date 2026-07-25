@@ -114,3 +114,101 @@ body {
   transform: translateY(0) scale(0.98);
 }
 
+/* ==========================================
+   High-Contrast Late-Night Dark Mode Theme
+   ========================================== */
+html.dark {
+  --color-wood-50: #0f0d0b;
+  --color-wood-100: #1b1713;
+  --color-wood-200: #2c251e;
+  --color-wood-300: #42382d;
+  --color-wood-400: #82634a;
+  --color-wood-500: #d99a6c;
+  --color-wood-600: #e8b288;
+  --color-wood-700: #f2cbab;
+  --color-wood-800: #f7dfcb;
+  --color-wood-900: #fcf1e6;
+  --color-wood-950: #ffffff;
+
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0d0b09;
+  color: #fcf1e6;
+}
+
+/* Card & Surface Overrides */
+html.dark .bg-white {
+  background-color: #16120e !important;
+  color: #f3dfc6;
+}
+
+html.dark .bg-wood-50 {
+  background-color: #120f0c !important;
+}
+
+html.dark .bg-wood-100 {
+  background-color: #1c1813 !important;
+}
+
+html.dark .bg-wood-200 {
+  background-color: #2b241c !important;
+}
+
+/* Navigation & Header Overrides */
+html.dark nav {
+  background-color: #14100d !important;
+  border-color: #2c251e !important;
+}
+
+/* Text Overrides for High-Contrast Contrast */
+html.dark .text-wood-900,
+html.dark .text-wood-950 {
+  color: #fdfbf7 !important;
+}
+
+html.dark .text-wood-800,
+html.dark .text-wood-700 {
+  color: #f3dfc6 !important;
+}
+
+html.dark .text-wood-600,
+html.dark .text-wood-500 {
+  color: #dba374 !important;
+}
+
+/* Border Overrides */
+html.dark .border-wood-100,
+html.dark .border-wood-200,
+html.dark .border-wood-250 {
+  border-color: #2e261e !important;
+}
+
+/* Input & Modal Elements */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1a1612 !important;
+  color: #fdfbf7 !important;
+  border-color: #382d24 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #8c6a4e !important;
+}
+
+/* Dark Mode Scrollbars */
+html.dark ::-webkit-scrollbar-track {
+  background: #0f0d0b;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #2c251e;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #42382d;
+}
+

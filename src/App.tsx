@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield } from 'lucide-react';
 import { loadState, saveState as saveLocalStorageState, PlatformState, checkMessageContactSharing } from './state';
+import { subscribeToFirestoreState, saveStateToFirestore } from './lib/firestoreSync';
 import { User, School, Hostel, Booking, InspectorJob, CohabitantPost, ChatThread, Message } from './types';
 import { getApiUrl } from './utils';
 import LandingPage from './components/LandingPage';
@@ -48,15 +49,44 @@ export default function App() {
     };
   }, []);
 
-  // Sync state from backend on mount
+  // Sync state from Firestore and backend on mount
   useEffect(() => {
+    // 1. First subscribe to real-time Firestore updates
+    const unsubscribe = subscribeToFirestoreState(
+      (firestoreData) => {
+        const localActiveUserId = localStorage.getItem('dormiversity_active_user_id') || '';
+        const localBookmarksStr = localStorage.getItem('dormiversity_bookmarks') || '[]';
+        let localBookmarks: string[] = [];
+        try {
+          localBookmarks = JSON.parse(localBookmarksStr);
+        } catch (e) {}
+
+        const mergedState = {
+          ...firestoreData,
+          activeUserId: localActiveUserId || firestoreData.activeUserId || (firestoreData.users && firestoreData.users[0] ? firestoreData.users[0].id : ''),
+          bookmarks: localBookmarks.length > 0 ? localBookmarks : (firestoreData.bookmarks || [])
+        };
+
+        setState(mergedState);
+
+        if (mergedState.activeUserId) {
+          const user = mergedState.users?.find((u: any) => u.id === mergedState.activeUserId);
+          if (user && user.role !== 'ADMIN') {
+            setIsLoggedIn(true);
+          }
+        }
+      },
+      (err) => {
+        console.warn('Firestore subscription failed, falling back to local/server state:', err);
+      }
+    );
+
+    // 2. Also attempt server fetch as supplementary backup
     const fetchState = async () => {
       try {
         const res = await fetch(getApiUrl('/api/state'));
         if (res.ok) {
           const data = await res.json();
-          
-          // Load local user session and bookmarks from client storage
           const localActiveUserId = localStorage.getItem('dormiversity_active_user_id') || '';
           const localBookmarksStr = localStorage.getItem('dormiversity_bookmarks') || '[]';
           let localBookmarks: string[] = [];
@@ -70,24 +100,17 @@ export default function App() {
             bookmarks: localBookmarks.length > 0 ? localBookmarks : (data.bookmarks || [])
           };
           
-          setState(mergedState);
-          
-          // If already logged in, restore login state
-          if (mergedState.activeUserId) {
-            const user = mergedState.users.find((u: any) => u.id === mergedState.activeUserId);
-            if (user && user.role !== 'ADMIN') {
-              setIsLoggedIn(true);
-            }
-          }
-          return;
+          setState(prev => prev ? prev : mergedState);
         }
       } catch (err) {
-        console.warn('Backend state fetch failed, falling back to localStorage:', err);
+        console.warn('Backend state fetch failed:', err);
       }
-      const loaded = loadState();
-      setState(loaded);
     };
     fetchState();
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Admin token verification check
@@ -183,7 +206,7 @@ export default function App() {
     saveStateAndSync(newState);
   };
 
-  // Helper to save state locally and sync to server
+  // Helper to save state locally, persist to Firestore, and sync to server
   const saveStateAndSync = async (newState: PlatformState) => {
     setState(newState);
     saveLocalStorageState(newState); // local fallback
@@ -195,6 +218,11 @@ export default function App() {
       localStorage.removeItem('dormiversity_active_user_id');
     }
     localStorage.setItem('dormiversity_bookmarks', JSON.stringify(newState.bookmarks || []));
+
+    // Persist to Cloud Firestore
+    saveStateToFirestore(newState).catch(err => {
+      console.warn('Failed to persist state to Firestore:', err);
+    });
 
     try {
       await fetch(getApiUrl('/api/state'), {
@@ -290,7 +318,7 @@ export default function App() {
   };
 
   // 4. Rent Escrow Booking
-  const handleBookHostel = (hostelId: string, inspectionChoice?: 'SELF' | 'ROOMLY') => {
+  const handleBookHostel = (hostelId: string, inspectionChoice?: 'SELF' | 'ROOMLY', inspectorId?: string) => {
     const hostel = state.hostels.find(h => h.id === hostelId)!;
     const newBookingId = 'booking_' + Date.now();
     const opt = inspectionChoice || 'SELF';
@@ -347,6 +375,7 @@ export default function App() {
     let updatedJobs = [...state.jobs];
     if (opt === 'ROOMLY') {
       const jobId = 'job_' + Date.now();
+      const assignedInspector = inspectorId ? state.users.find(u => u.id === inspectorId) : undefined;
       const newJob: InspectorJob = {
         id: jobId,
         hostelId: hostelId,
@@ -357,7 +386,9 @@ export default function App() {
         landlordName: hostel.landlordName,
         studentId: activeUser.id,
         studentName: activeUser.name,
-        status: 'UNASSIGNED',
+        inspectorId: assignedInspector?.id,
+        inspectorName: assignedInspector?.name,
+        status: assignedInspector ? 'ASSIGNED' : 'UNASSIGNED',
         fee: 5000,
         createdAt: new Date().toISOString()
       };
@@ -379,10 +410,11 @@ export default function App() {
   };
 
   // 5. Hiring an Inspector
-  const handleRequestInspection = (hostelId: string) => {
+  const handleRequestInspection = (hostelId: string, inspectorId?: string) => {
     const hostel = state.hostels.find(h => h.id === hostelId)!;
     const jobId = 'job_' + Date.now();
     const booking = state.bookings.find(b => b.hostelId === hostelId && b.studentId === activeUser.id);
+    const assignedInspector = inspectorId ? state.users.find(u => u.id === inspectorId) : undefined;
 
     const newJob: InspectorJob = {
       id: jobId,
@@ -394,7 +426,9 @@ export default function App() {
       landlordName: hostel.landlordName,
       studentId: activeUser.id,
       studentName: activeUser.name,
-      status: 'UNASSIGNED',
+      inspectorId: assignedInspector?.id,
+      inspectorName: assignedInspector?.name,
+      status: assignedInspector ? 'ASSIGNED' : 'UNASSIGNED',
       fee: 5000,
       createdAt: new Date().toISOString()
     };
@@ -411,6 +445,18 @@ export default function App() {
     saveStateAndSync(updated);
 
     setActiveTab('bookings');
+  };
+
+  // Mark job as done/completed by student or inspector
+  const handleCompleteJob = (jobId: string) => {
+    const updatedJobs = state.jobs.map(j => 
+      j.id === jobId ? { ...j, status: 'COMPLETED' as const } : j
+    );
+    const updated = {
+      ...state,
+      jobs: updatedJobs
+    };
+    saveStateAndSync(updated);
   };
 
   // 6. Inspector Claims Job
@@ -1145,6 +1191,7 @@ export default function App() {
                 onCloseCohabitantPost={handleCloseCohabitantPost}
                 onUpdateProfile={handleUpdateProfile}
                 onDeleteAccount={handleDeleteAccount}
+                onCompleteJob={handleCompleteJob}
                 initialSubTab={
                   activeTab === 'profile' ? 'profile' :
                   activeTab === 'bookings' ? 'bookings' :

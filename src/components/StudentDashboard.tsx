@@ -28,6 +28,7 @@ interface StudentDashboardProps {
   onCloseCohabitantPost: (postId: string) => void;
   onUpdateProfile?: (updatedUser: User) => void;
   onDeleteAccount?: (userId: string) => void;
+  onCompleteJob?: (jobId: string) => void;
   initialSubTab?: 'search' | 'bookings' | 'roommates' | 'bookmarks' | 'faqs' | 'profile';
 }
 
@@ -51,6 +52,7 @@ export default function StudentDashboard({
   onCloseCohabitantPost,
   onUpdateProfile,
   onDeleteAccount,
+  onCompleteJob,
   initialSubTab
 }: StudentDashboardProps) {
   const [subTab, setSubTab] = useState<'search' | 'bookings' | 'roommates' | 'bookmarks' | 'faqs' | 'profile'>(initialSubTab || 'search');
@@ -61,9 +63,13 @@ export default function StudentDashboard({
     }
   }, [initialSubTab]);
 
-  // Modal states for Report and Refund
+  // Modal states for Report, Refund, and Inspector Report
   const [reportModal, setReportModal] = useState<{ isOpen: boolean; hostelId: string; hostelName: string }>({ isOpen: false, hostelId: '', hostelName: '' });
   const [refundModal, setRefundModal] = useState<{ isOpen: boolean; bookingId: string; hostelName: string; amount: number; currentStatus: string }>({ isOpen: false, bookingId: '', hostelName: '', amount: 0, currentStatus: '' });
+  const [reportInspectorModal, setReportInspectorModal] = useState<{ isOpen: boolean; inspectorId: string; inspectorName: string; hostelName?: string }>({ isOpen: false, inspectorId: '', inspectorName: '', hostelName: '' });
+  const [inspectorReportReason, setInspectorReportReason] = useState('Unprofessional Behavior');
+  const [inspectorReportNotes, setInspectorReportNotes] = useState('');
+  const [inspectorReportSuccess, setInspectorReportSuccess] = useState(false);
   
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -746,34 +752,84 @@ export default function StudentDashboard({
 
                       {/* Tied Inspection Status */}
                       <div className="border-t border-b border-wood-100 py-4">
-                        <h4 className="text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">Roomly Inspection Report</h4>
+                        <h4 className="text-xs font-bold text-wood-700 uppercase tracking-wider mb-2">Roomly Inspection Report & Vetting</h4>
                         {inspection ? (
-                          <div className="bg-wood-50 p-4 rounded-xl border border-wood-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div>
-                              <p className="font-bold text-wood-950 text-sm">Vetting Status: {inspection.status}</p>
-                              <p className="text-xs text-wood-500 mt-0.5">Assigned Inspector: {inspection.inspectorName || 'Tunde Alao'}</p>
-                              {inspection.report && (
-                                <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-wood-700 bg-white p-2.5 rounded-lg border border-wood-200">
-                                  <p>🚰 Borehole Water: <strong>{inspection.report.waterStatus}</strong></p>
-                                  <p>⚡ Power Access: <strong>{inspection.report.powerStatus}</strong></p>
-                                  <p>🛡️ Security: <strong>{inspection.report.securityStatus}</strong></p>
-                                  <p>🧼 Cleanliness: <strong>{inspection.report.cleanlinessStatus}</strong></p>
+                          <div className="bg-wood-50 p-4 rounded-xl border border-wood-100 space-y-3">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <div>
+                                <p className="font-bold text-wood-950 text-sm flex items-center gap-2">
+                                  <span>Vetting Status: {inspection.status}</span>
+                                  {inspection.status !== 'COMPLETED' ? (
+                                    <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2 py-0.5 rounded-full">
+                                      🔒 Inspector Hired (Locked)
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                                      ✓ Inspection Finalized
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-wood-600 font-medium mt-0.5">
+                                  Assigned Inspector: <strong className="text-wood-950">{inspection.inspectorName || 'Assigned Inspector'}</strong>
+                                </p>
+                                {inspection.report && (
+                                  <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-wood-700 bg-white p-2.5 rounded-lg border border-wood-200">
+                                    <p>🚰 Borehole Water: <strong>{inspection.report.waterStatus}</strong></p>
+                                    <p>⚡ Power Access: <strong>{inspection.report.powerStatus}</strong></p>
+                                    <p>🛡️ Security: <strong>{inspection.report.securityStatus}</strong></p>
+                                    <p>🧼 Cleanliness: <strong>{inspection.report.cleanlinessStatus}</strong></p>
+                                  </div>
+                                )}
+                              </div>
+                              {inspection.report ? (
+                                <div className="sm:text-right">
+                                  <span className={`inline-block px-2.5 py-1 text-[10px] font-bold rounded-md uppercase ${
+                                    inspection.report.recommendation === 'Highly Recommended' ? 'bg-emerald-100 text-emerald-800' :
+                                    inspection.report.recommendation === 'Do Not Book' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {inspection.report.recommendation}
+                                  </span>
+                                  <p className="text-[10px] text-wood-400 font-medium mt-1">Submitted on {formatDate(inspection.report.createdAt).split(',')[0]}</p>
                                 </div>
+                              ) : (
+                                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Visiting hostel physically...</span>
                               )}
                             </div>
-                            {inspection.report ? (
-                              <div className="sm:text-right">
-                                <span className={`inline-block px-2.5 py-1 text-[10px] font-bold rounded-md uppercase ${
-                                  inspection.report.recommendation === 'Highly Recommended' ? 'bg-emerald-100 text-emerald-800' :
-                                  inspection.report.recommendation === 'Do Not Book' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {inspection.report.recommendation}
+
+                            {/* Inspector Action Controls */}
+                            <div className="pt-2 border-t border-wood-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <button
+                                onClick={() => setReportInspectorModal({
+                                  isOpen: true,
+                                  inspectorId: inspection.inspectorId || '',
+                                  inspectorName: inspection.inspectorName || 'Inspector',
+                                  hostelName: booking.hostelName
+                                })}
+                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold flex items-center space-x-1 transition-all cursor-pointer"
+                              >
+                                <Flag size={13} />
+                                <span>Report Inspector</span>
+                              </button>
+
+                              {inspection.status !== 'COMPLETED' ? (
+                                <button
+                                  onClick={() => {
+                                    if (onCompleteJob) {
+                                      onCompleteJob(inspection.id);
+                                    }
+                                    alert(`Inspection marked as Done! ${inspection.inspectorName || 'The inspector'} has been released and is now available for other students.`);
+                                  }}
+                                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                                >
+                                  <CheckCircle2 size={14} />
+                                  <span>Done with Inspector</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                  ✓ Inspection Service Closed
                                 </span>
-                                <p className="text-[10px] text-wood-400 font-medium mt-1">Submitted on {formatDate(inspection.report.createdAt).split(',')[0]}</p>
-                              </div>
-                            ) : (
-                              <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Visiting hostel physically...</span>
-                            )}
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-wood-100/30 p-3 rounded-xl border border-dashed border-wood-300 gap-2">
@@ -1801,58 +1857,90 @@ export default function StudentDashboard({
                     {inspectionChoice === 'ROOMLY' && (() => {
                       const hostel = hostels.find(h => h.id === showPaystackModal.hostelId);
                       const currentSchoolId = hostel?.schoolId || activeStudent.schoolId;
-                      const schoolInspectors = (users || []).filter(u => u.role === 'INSPECTOR' && (u.schoolId === currentSchoolId || !u.schoolId || u.kycStatus === 'APPROVED'));
+                      
+                      // Strict filter: inspectors registered to student's/hostel's school
+                      const schoolInspectors = (users || []).filter(u => 
+                        u.role === 'INSPECTOR' && 
+                        (u.schoolId === currentSchoolId || !u.schoolId || u.schoolId === activeStudent.schoolId)
+                      );
                       const currentSchool = schools.find(s => s.id === currentSchoolId);
 
                       return (
                         <div className="mt-3 pt-3 border-t border-wood-200 space-y-2">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-wood-950">Select Inspector for {currentSchool?.name || 'Institution'}:</span>
+                            <span className="font-bold text-wood-950">Available Inspectors at {currentSchool?.name || 'Your School'}:</span>
                             <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                              {schoolInspectors.length} Verified Inspector(s)
+                              {schoolInspectors.filter(i => !jobs.some(j => j.inspectorId === i.id && j.status !== 'COMPLETED')).length} Available
                             </span>
                           </div>
                           
-                          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                            {schoolInspectors.map(inspector => {
-                              const isSelected = selectedInspectorId === inspector.id || (!selectedInspectorId && inspector.id === schoolInspectors[0]?.id);
-                              return (
-                                <div
-                                  key={inspector.id}
-                                  onClick={() => setSelectedInspectorId(inspector.id)}
-                                  className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                                    isSelected 
-                                      ? 'bg-amber-100/80 border-amber-500 ring-1 ring-amber-500 shadow-3xs' 
-                                      : 'bg-white border-wood-200 hover:bg-wood-50'
-                                  }`}
-                                >
-                                  <div className="flex items-center space-x-2.5">
-                                    <div className="w-8 h-8 rounded-full bg-wood-200 overflow-hidden shrink-0 border border-wood-300">
-                                      {inspector.profilePicture ? (
-                                        <img src={inspector.profilePicture} alt={inspector.name} className="w-full h-full object-cover" />
+                          {schoolInspectors.length === 0 ? (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-amber-800 text-xs">
+                              No inspectors currently registered at {currentSchool?.name || 'this school'}. System will auto-assign a roving campus inspector.
+                            </div>
+                          ) : (
+                            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                              {schoolInspectors.map(inspector => {
+                                // Check if inspector is currently hired / on assignment
+                                const activeJob = jobs.find(j => j.inspectorId === inspector.id && j.status !== 'COMPLETED');
+                                const isBusy = !!activeJob;
+                                const isSelected = selectedInspectorId === inspector.id || (!selectedInspectorId && !isBusy && inspector.id === schoolInspectors.find(i => !jobs.some(j => j.inspectorId === i.id && j.status !== 'COMPLETED'))?.id);
+
+                                return (
+                                  <div
+                                    key={inspector.id}
+                                    onClick={() => {
+                                      if (isBusy) {
+                                        alert(`${inspector.name} is currently hired by another student for an inspection and cannot accept new requests until they complete their current assignment.`);
+                                        return;
+                                      }
+                                      setSelectedInspectorId(inspector.id);
+                                    }}
+                                    className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                                      isBusy 
+                                        ? 'bg-gray-100 border-gray-300 opacity-70 cursor-not-allowed' 
+                                        : isSelected 
+                                          ? 'bg-amber-100/80 border-amber-500 ring-1 ring-amber-500 shadow-3xs cursor-pointer' 
+                                          : 'bg-white border-wood-200 hover:bg-wood-50 cursor-pointer'
+                                    }`}
+                                  >
+                                    <div className="flex items-center space-x-2.5">
+                                      <div className="w-8 h-8 rounded-full bg-wood-200 overflow-hidden shrink-0 border border-wood-300">
+                                        {inspector.profilePicture ? (
+                                          <img src={inspector.profilePicture} alt={inspector.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full bg-wood-700 text-white font-bold flex items-center justify-center text-xs">
+                                            {inspector.name.charAt(0)}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <h5 className="font-bold text-xs text-wood-950 flex items-center gap-1">
+                                          <span>{inspector.name}</span>
+                                          <span className="text-[8px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded">VERIFIED</span>
+                                        </h5>
+                                        <p className="text-[10px] text-wood-500">
+                                          {currentSchool?.abbreviation || currentSchool?.name || 'Campus Inspector'}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      {isBusy ? (
+                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-amber-200 text-amber-900 border border-amber-300">
+                                          🔒 BUSY / ON ASSIGNMENT
+                                        </span>
                                       ) : (
-                                        <div className="w-full h-full bg-wood-700 text-white font-bold flex items-center justify-center text-xs">
-                                          {inspector.name.charAt(0)}
-                                        </div>
+                                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${isSelected ? 'bg-amber-900 text-white shadow-3xs' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                                          {isSelected ? '✓ Selected' : 'Choose'}
+                                        </span>
                                       )}
                                     </div>
-                                    <div>
-                                      <h5 className="font-bold text-xs text-wood-950 flex items-center gap-1">
-                                        <span>{inspector.name}</span>
-                                        <span className="text-[8px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded">GOVT ID</span>
-                                      </h5>
-                                      <p className="text-[10px] text-wood-500">
-                                        Bank: {inspector.kycDetails?.bankName || 'GTB'} ({inspector.kycDetails?.bankAccountName || inspector.name})
-                                      </p>
-                                    </div>
                                   </div>
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${isSelected ? 'bg-amber-900 text-white' : 'bg-wood-100 text-wood-600'}`}>
-                                    {isSelected ? 'Selected' : 'Choose'}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
@@ -1971,6 +2059,112 @@ export default function StudentDashboard({
           }
         }}
       />
+
+      {/* REPORT INSPECTOR MODAL */}
+      {reportInspectorModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-wood-200 relative space-y-4">
+            <button
+              onClick={() => {
+                setReportInspectorModal({ isOpen: false, inspectorId: '', inspectorName: '', hostelName: '' });
+                setInspectorReportSuccess(false);
+              }}
+              className="absolute top-4 right-4 text-wood-400 hover:text-wood-700 p-1 rounded-full hover:bg-wood-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <Flag size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-wood-950">Report Inspector Behavior</h3>
+                <p className="text-xs text-wood-500">Inspector: {reportInspectorModal.inspectorName}</p>
+              </div>
+            </div>
+
+            {inspectorReportSuccess ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
+                <CheckCircle2 className="mx-auto text-emerald-600" size={32} />
+                <h4 className="font-bold text-sm text-emerald-950">Report Submitted to Compliance</h4>
+                <p className="text-xs text-emerald-800">
+                  Thank you for keeping Dormiversity safe. Our safety board has received your complaint regarding <strong>{reportInspectorModal.inspectorName}</strong> and will review the case within 24 hours.
+                </p>
+                <button
+                  onClick={() => {
+                    setReportInspectorModal({ isOpen: false, inspectorId: '', inspectorName: '', hostelName: '' });
+                    setInspectorReportSuccess(false);
+                  }}
+                  className="mt-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Close Window
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setInspectorReportSuccess(true);
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-wood-800 mb-1">Reason for Complaint</label>
+                  <select
+                    value={inspectorReportReason}
+                    onChange={(e) => setInspectorReportReason(e.target.value)}
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-wood-300 bg-wood-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="Unprofessional Behavior">Unprofessional or Rude Behavior</option>
+                    <option value="Demanding Extra Cash">Demanding Extra Unofficial Cash / Extortion</option>
+                    <option value="Fake Inspection Report">Submitted False/Inaccurate Inspection Report</option>
+                    <option value="No Show / Delayed">No-Show / Unreachable for Scheduled Visit</option>
+                    <option value="Harassment">Safety / Harassment Concern</option>
+                    <option value="Other">Other Issues</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-wood-800 mb-1">Detailed Description & Evidence Notes</label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={inspectorReportNotes}
+                    onChange={(e) => setInspectorReportNotes(e.target.value)}
+                    placeholder="Provide details about what happened during the hostel inspection visit..."
+                    className="w-full text-xs p-3 rounded-xl border border-wood-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-wood-50 focus:bg-white"
+                  />
+                </div>
+
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 flex items-start space-x-2">
+                  <ShieldAlert size={16} className="text-amber-700 shrink-0 mt-0.5" />
+                  <span>
+                    Inspectors with 2+ verified infractions face immediate suspension and loss of their campus verification badge.
+                  </span>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setReportInspectorModal({ isOpen: false, inspectorId: '', inspectorName: '', hostelName: '' })}
+                    className="px-4 py-2 bg-wood-100 hover:bg-wood-200 text-wood-700 font-bold text-xs rounded-xl cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs flex items-center space-x-1"
+                  >
+                    <Flag size={13} />
+                    <span>Submit Formal Report</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

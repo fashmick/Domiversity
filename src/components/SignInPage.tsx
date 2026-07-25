@@ -55,26 +55,24 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
   const [googleAuthEmail, setGoogleAuthEmail] = useState('fashinaayomide2005@gmail.com');
 
   const handleGoogleSignIn = async () => {
+    // Open window synchronously to avoid browser popup blocker
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    const authWindow = window.open('about:blank', 'google_oauth_popup', `width=${width},height=${height},top=${top},left=${left}`);
+
     try {
       const res = await fetch(getApiUrl(`/api/auth/google/url?role=${role}`));
       const data = await res.json();
-      if (data.url) {
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        const authWindow = window.open(
-          data.url,
-          'google_oauth_popup',
-          `width=${width},height=${height},top=${top},left=${left}`
-        );
-        if (!authWindow) {
-          setShowGoogleModal(true);
-        }
+      if (data.url && authWindow) {
+        authWindow.location.href = data.url;
       } else {
+        if (authWindow) authWindow.close();
         setShowGoogleModal(true);
       }
     } catch (err) {
+      if (authWindow) authWindow.close();
       console.warn('Backend Google Auth popup unavailable in preview, launching Google Fast Sign-In:', err);
       setShowGoogleModal(true);
     }
