@@ -51,6 +51,7 @@ export default function SignInPage({ users, onSignIn, onNavigateToLanding }: Sig
       setErrorMsg(`No matched account found under the ${role.toLowerCase()} role with those credentials. Please make sure you have signed up first!`);
     }
   };
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [googleAuthEmail, setGoogleAuthEmail] = useState('fashinaayomide2005@gmail.com');
 
   const handleGoogleSignIn = async () => {
